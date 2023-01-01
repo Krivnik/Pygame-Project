@@ -2,13 +2,16 @@ import pygame
 import sys
 from image_loading import load_image
 
+FPS = 60
+
 pygame.init()
 size = width, height = 1280, 720
 screen = pygame.display.set_mode(size)
 
 
 def start_screen():
-    intro_text = ["MERGE GAME", "",
+    intro_text = ["MERGE GAME",
+                  "",
                   "Здесь будут",
                   "правила"]
 
@@ -30,8 +33,7 @@ def start_screen():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            elif event.type == pygame.KEYDOWN or \
-                    event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
                 return
         pygame.display.flip()
-        pygame.time.Clock().tick(50)
+        pygame.time.Clock().tick(FPS)

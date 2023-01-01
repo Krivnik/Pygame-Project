@@ -12,6 +12,7 @@ if __name__ == '__main__':
     screen = pygame.display.set_mode(size)
 
     start_screen()
+    screen.fill('white')
 
     running = True
     while running:
