@@ -69,6 +69,7 @@ if __name__ == '__main__':
     pygame.display.set_caption('Merge Game')
     size = width, height = 1280, 720
     screen = pygame.display.set_mode(size)
+    fon = pygame.transform.scale(load_image('fon.jpg'), (width, height))
 
     start_screen()
     screen.fill('white')
@@ -79,6 +80,7 @@ if __name__ == '__main__':
 
     running = True
     while running:
+        screen.blit(fon, (0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False

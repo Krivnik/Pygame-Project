@@ -10,14 +10,14 @@ screen = pygame.display.set_mode(size)
 
 
 def start_screen():
-    intro_text = ["MERGE GAME",
+    intro_text = ["MERGE CAKES",
                   "",
                   "Здесь будут",
                   "правила"]
 
-    fon = pygame.transform.scale(load_image('fon.jpg'), (width, height))
+    fon = pygame.transform.scale(load_image('start screen fon.jpg'), (width, height))
     screen.blit(fon, (0, 0))
-    font = pygame.font.SysFont('comic sans', 60)
+    font = pygame.font.SysFont('segoe script', 50)
     text_coord = 50
     for line in intro_text:
         string_rendered = font.render(line, True, 'black')
