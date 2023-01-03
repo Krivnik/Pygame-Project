@@ -70,6 +70,9 @@ class Board:
 
     def get_click(self, mouse_pos):
         self.on_click(self.get_cell(mouse_pos))
+        
+    def get_info(self):
+        return self.width, self.height, self.top, self.left, self.cell_size
 
 
 class Cell(pygame.sprite.Sprite):
@@ -88,6 +91,23 @@ class Panel(pygame.sprite.Sprite):
         elif type == 'H':
             self.image = load_image('horizontal panel.png', -1)
         self.rect = self.image.get_rect()
+        
+  # добавил класс для печеньев
+class Cookies(pygame.sprite.Sprite):
+    def __init__(self, lvl, pos, info):  # в ините принимает уровень печенья, позицию на доске и
+        # информацию о доске(из Board)
+        super().__init__(cookies_group)
+        self.width, self.height, self.top, self.left, self.cell_size = info
+        self.image = load_image(f'lvl{str(lvl)}_sprite.jpg')
+        self.w = pos[0]
+        self.h = pos[1]
+        self.rect = self.image.get_rect()
+        # ставлю печенье на его место на доске
+        self.rect.x = self.left + self.w * self.cell_size
+        self.rect.y = self.top + self.h * self.cell_size
+
+
+# я ещё картинки загрузил, но они не подходят т. к фон не одноцветный, надо другие найти
 
 
 if __name__ == '__main__':
@@ -101,6 +121,11 @@ if __name__ == '__main__':
 
     cells_group = pygame.sprite.Group()
     panels_group = pygame.sprite.Group()
+    cookies_group = pygame.sprite.Group()
+
+    board = Board(3, 3)
+    board_info = board.get_info()
+    a = Cookies(1, (1, 1), board_info)
 
     render_environment()
 
