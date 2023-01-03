@@ -7,8 +7,6 @@ FPS = 60
 
 
 def render_environment():
-    board = Board(3, 3)
-
     upgrades = Panel('V')
     upgrades.rect.x = 75
     upgrades.rect.y = 135
@@ -21,12 +19,14 @@ def render_environment():
     shop.rect.x = 190
     shop.rect.y = 570
 
+    cs = Cookies(1, (1, 1), board_info)
+
 
 class Board:
     def __init__(self, width_in_cells, height_in_cells):
         self.width = width_in_cells
         self.height = height_in_cells
-        self.board = [[0, 1] * self.width for _ in range(self.height)]
+        self.board = [[[0, 1]] * self.width for _ in range(self.height)]
         self.cell_size = 100
         self.left = width // 2 - self.cell_size * self.width // 2
         self.top = height // 2 - self.cell_size * self.height // 2
@@ -70,7 +70,7 @@ class Board:
 
     def get_click(self, mouse_pos):
         self.on_click(self.get_cell(mouse_pos))
-        
+
     def get_info(self):
         return self.width, self.height, self.top, self.left, self.cell_size
 
@@ -84,30 +84,25 @@ class Cell(pygame.sprite.Sprite):
 
 
 class Panel(pygame.sprite.Sprite):
-    def __init__(self, type):
+    def __init__(self, t):
         super().__init__(panels_group)
-        if type == 'V':
+        if t == 'V':
             self.image = load_image('vertical panel.png', -1)
-        elif type == 'H':
+        elif t == 'H':
             self.image = load_image('horizontal panel.png', -1)
         self.rect = self.image.get_rect()
-        
-  # добавил класс для печеньев
+
+
 class Cookies(pygame.sprite.Sprite):
-    def __init__(self, lvl, pos, info):  # в ините принимает уровень печенья, позицию на доске и
-        # информацию о доске(из Board)
+    def __init__(self, lvl, pos, info):
         super().__init__(cookies_group)
         self.width, self.height, self.top, self.left, self.cell_size = info
-        self.image = load_image(f'lvl{str(lvl)}_sprite.jpg')
-        self.w = pos[0]
-        self.h = pos[1]
+        self.image = load_image(f'lvl{str(lvl)}_sprite.png', -1)
+        b.board[pos[1]][pos[0]][0] = lvl
+        self.x, self.y = pos[0], pos[1]
         self.rect = self.image.get_rect()
-        # ставлю печенье на его место на доске
-        self.rect.x = self.left + self.w * self.cell_size
-        self.rect.y = self.top + self.h * self.cell_size
-
-
-# я ещё картинки загрузил, но они не подходят т. к фон не одноцветный, надо другие найти
+        self.rect.x = self.left + self.x * self.cell_size
+        self.rect.y = self.top + self.y * self.cell_size
 
 
 if __name__ == '__main__':
@@ -123,10 +118,8 @@ if __name__ == '__main__':
     panels_group = pygame.sprite.Group()
     cookies_group = pygame.sprite.Group()
 
-    board = Board(3, 3)
-    board_info = board.get_info()
-    a = Cookies(1, (1, 1), board_info)
-
+    b = Board(3, 3)
+    board_info = b.get_info()
     render_environment()
 
     running = True
@@ -137,6 +130,7 @@ if __name__ == '__main__':
                 running = False
         cells_group.draw(screen)
         panels_group.draw(screen)
+        cookies_group.draw(screen)
         pygame.display.flip()
         pygame.time.Clock().tick(FPS)
     pygame.quit()
