@@ -6,6 +6,22 @@ from start_screen import start_screen
 FPS = 60
 
 
+def render_environment():
+    board = Board(3, 3)
+
+    upgrades = Panel('V')
+    upgrades.rect.x = 75
+    upgrades.rect.y = 135
+
+    boosts = Panel('V')
+    boosts.rect.x = 1055
+    boosts.rect.y = 135
+
+    shop = Panel('H')
+    shop.rect.x = 190
+    shop.rect.y = 570
+
+
 class Board:
     def __init__(self, width_in_cells, height_in_cells):
         self.width = width_in_cells
@@ -60,7 +76,17 @@ class Cell(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(cells_group)
         self.x, self.y = pos_x, pos_y
-        self.image = load_image('cell.png', -1)
+        self.image = load_image('cell.png')
+        self.rect = self.image.get_rect()
+
+
+class Panel(pygame.sprite.Sprite):
+    def __init__(self, type):
+        super().__init__(panels_group)
+        if type == 'V':
+            self.image = load_image('vertical panel.png', -1)
+        elif type == 'H':
+            self.image = load_image('horizontal panel.png', -1)
         self.rect = self.image.get_rect()
 
 
@@ -72,11 +98,11 @@ if __name__ == '__main__':
     fon = pygame.transform.scale(load_image('fon.jpg'), (width, height))
 
     start_screen()
-    screen.fill('white')
 
     cells_group = pygame.sprite.Group()
+    panels_group = pygame.sprite.Group()
 
-    board = Board(3, 3)
+    render_environment()
 
     running = True
     while running:
@@ -85,6 +111,7 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT:
                 running = False
         cells_group.draw(screen)
+        panels_group.draw(screen)
         pygame.display.flip()
         pygame.time.Clock().tick(FPS)
     pygame.quit()
