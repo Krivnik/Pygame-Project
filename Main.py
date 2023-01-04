@@ -19,7 +19,8 @@ def render_environment():
     shop.rect.x = 190
     shop.rect.y = 570
 
-    cs = Cookies(1, (1, 1), board_info)
+    Cookies(1, (1, 1), board_info)
+    Cookies(1, (0, 0), board_info)
 
 
 class Board:
@@ -93,16 +94,43 @@ class Panel(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
 
 
+class Cursor(pygame.sprite.Sprite):
+    image = load_image("arrow.png")
+
+    def __init__(self, group):
+        # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
+        # Это очень важно !!!
+        super().__init__(group)
+        self.image = Cursor.image
+        self.rect = self.image.get_rect()
+        self.visible = True
+
+    def update(self, *args):
+        if args and args[0].type == pygame.MOUSEMOTION and \
+                pygame.mouse.get_focused():
+            self.rect.x = args[0].pos[0]
+            self.rect.y = args[0].pos[1]
+        if not pygame.mouse.get_focused():
+            self.visible = False
+        else:
+            self.visible = True
+
+
 class Cookies(pygame.sprite.Sprite):
     def __init__(self, lvl, pos, info):
         super().__init__(cookies_group)
         self.width, self.height, self.top, self.left, self.cell_size = info
         self.image = load_image(f'lvl{str(lvl)}_sprite.png', -1)
         b.board[pos[1]][pos[0]][0] = lvl
+        self.mask = pygame.mask.from_surface(self.image)
         self.x, self.y = pos[0], pos[1]
         self.rect = self.image.get_rect()
         self.rect.x = self.left + self.x * self.cell_size
         self.rect.y = self.top + self.y * self.cell_size
+
+    def update(self, w, h):
+        self.rect.x += w
+        self.rect.y += h
 
 
 if __name__ == '__main__':
@@ -110,7 +138,10 @@ if __name__ == '__main__':
     pygame.display.set_caption('Merge Game')
     size = width, height = 1280, 720
     screen = pygame.display.set_mode(size)
+    pygame.mouse.set_visible(False)
     fon = pygame.transform.scale(load_image('fon.jpg'), (width, height))
+    cur_sprite = pygame.sprite.Group()
+    cur = Cursor(cur_sprite)
 
     start_screen()
 
@@ -123,14 +154,31 @@ if __name__ == '__main__':
     render_environment()
 
     running = True
+    moving = False
     while running:
         screen.blit(fon, (0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                point = pygame.mouse.get_pos()
+                x0, y0 = event.pos
+                if pygame.sprite.spritecollide(cur, cookies_group, False):
+                    moving = True
+            elif event.type == pygame.MOUSEBUTTONUP:
+                moving = False
+            if event.type == pygame.MOUSEMOTION:
+                if moving:
+                    w, h = event.pos[0] - x0, event.pos[1] - y0
+                    x0, y0 = event.pos
+                    cookies_group.update(w, h)
+                    w, h = 0, 0
+            cur_sprite.update(event)
         cells_group.draw(screen)
         panels_group.draw(screen)
         cookies_group.draw(screen)
+        if cur.visible:
+            cur_sprite.draw(screen)
         pygame.display.flip()
         pygame.time.Clock().tick(FPS)
     pygame.quit()
