@@ -118,10 +118,7 @@ class Cookie(pygame.sprite.Sprite):
         self.width, self.height, self.top, self.left, self.cell_size = info
         self.lvl = lvl
         self.image = load_image(f'lvl{str(lvl)}_sprite.png', -1)
-        self.mask = pygame.mask.from_surface(self.image)
-        # Думаю лучше работать с прямоугольниками, а не с маской
-        b.board[pos[1]][pos[0]][0] = lvl  # В этой строчке ошибка,
-        # она меняет уровень печеньки не в одной ячейке, а во всем ряду. Как это пофиксить хз
+        b.board[pos[1]][pos[0]][0] = lvl
 
         self.x, self.y = pos[0], pos[1]
         self.rect = self.image.get_rect()
@@ -135,31 +132,30 @@ class Cookie(pygame.sprite.Sprite):
     def go_to_nearest_cell(self):
         self_c = self.rect.center
         ranges = []
+
         for cell in cells_group:
             cell_c = cell.rect.center
             if b.board[cell.y][cell.x][0] == 0 or b.board[cell.y][cell.x][0] == self.lvl:
                 ranges.append(((self_c[0] - cell_c[0]) ** 2 + (self_c[1] - cell_c[1]) ** 2) ** 0.5)
-
             else:
                 ranges.append(1000000)
 
-        # НЕ ПЫТАЙСЯ РАЗОБРАТЬСЯ В ТОМ, ЧТО НИЖЕ
         target_cell_pos = [(ranges.index(min(ranges)) + 1) % b.width - 1,
                            math.ceil((ranges.index(min(ranges)) + 1) / b.width) - 1]
         if target_cell_pos[0] == -1:
             target_cell_pos[0] = b.width - 1
-        # НЕ ПЫТАЙСЯ РАЗОБРАТЬСЯ В ТОМ, ЧТО ВЫШЕ
 
-        b.board[self.y][self.x][0] = 0  # Тут та же самая ошибка
+        b.board[self.y][self.x][0] = 0
         self.x, self.y = target_cell_pos[0], target_cell_pos[1]
         self.rect.x = self.left + self.x * self.cell_size
         self.rect.y = self.top + self.y * self.cell_size
+
         if b.board[self.y][self.x][0] == self.lvl:
-            self.lvl += 1
-            del_sprite = pygame.sprite.spritecollideany(self, cookies_group)
-            del_sprite.kill()
-            self.image = load_image(f'lvl{str(self.lvl)}_sprite.png', -1)
-        b.board[self.y][self.x][0] = self.lvl  # Тут тоже
+            pygame.sprite.spritecollide(self, cookies_group, True)
+            Cookie(self.lvl + 1, (self.x, self.y), b.get_info())
+            b.board[self.y][self.x][0] = self.lvl + 1
+        else:
+            b.board[self.y][self.x][0] = self.lvl
 
 
 if __name__ == '__main__':
