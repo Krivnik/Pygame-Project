@@ -1,4 +1,5 @@
 import pygame
+import math
 import sys
 from image_loading import load_image
 from start_screen import start_screen
@@ -19,8 +20,8 @@ def render_environment():
     shop.rect.x = 190
     shop.rect.y = 570
 
-    Cookies(1, (1, 1), board_info)
-    Cookies(1, (0, 0), board_info)
+    Cookie(1, (1, 1), board_info)
+    Cookie(1, (0, 0), board_info)
 
 
 class Board:
@@ -95,59 +96,87 @@ class Panel(pygame.sprite.Sprite):
 
 
 class Cursor(pygame.sprite.Sprite):
-    image = load_image("arrow.png")
-
-    def __init__(self, group):
-        # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
-        # Это очень важно !!!
-        super().__init__(group)
-        self.image = Cursor.image
+    def __init__(self):
+        super().__init__(cur_group)
+        self.image = load_image("arrow.png")
         self.rect = self.image.get_rect()
         self.visible = True
 
     def update(self, *args):
-        if args and args[0].type == pygame.MOUSEMOTION and \
-                pygame.mouse.get_focused():
-            self.rect.x = args[0].pos[0]
-            self.rect.y = args[0].pos[1]
-        if not pygame.mouse.get_focused():
-            self.visible = False
-        else:
+        if args and args[0].type == pygame.MOUSEMOTION and pygame.mouse.get_focused():
+            self.rect.x, self.rect.y = args[0].pos[0], args[0].pos[1]
+        if pygame.mouse.get_focused():
             self.visible = True
+        else:
+            self.visible = False
 
 
-class Cookies(pygame.sprite.Sprite):
+class Cookie(pygame.sprite.Sprite):
     def __init__(self, lvl, pos, info):
         super().__init__(cookies_group)
         self.width, self.height, self.top, self.left, self.cell_size = info
+        self.lvl = lvl
         self.image = load_image(f'lvl{str(lvl)}_sprite.png', -1)
-        b.board[pos[1]][pos[0]][0] = lvl
         self.mask = pygame.mask.from_surface(self.image)
+        # Думаю лучше работать с прямоугольниками, а не с маской
+        b.board[pos[1]][pos[0]][0] = lvl  # В этой строчке ошибка,
+        # она меняет уровень печеньки не в одной ячейке, а во всем ряду. Как это пофиксить хз
+
         self.x, self.y = pos[0], pos[1]
         self.rect = self.image.get_rect()
         self.rect.x = self.left + self.x * self.cell_size
         self.rect.y = self.top + self.y * self.cell_size
 
-    def update(self, w, h):
-        self.rect.x += w
-        self.rect.y += h
+    def update(self, x, y):
+        self.rect.x += x
+        self.rect.y += y
+
+    def go_to_nearest_cell(self):
+        self_c = self.rect.center
+        ranges = []
+        for cell in cells_group:
+            cell_c = cell.rect.center
+            if b.board[cell.y][cell.x][0] == 0 or b.board[cell.y][cell.x][0] == self.lvl:
+                ranges.append(((self_c[0] - cell_c[0]) ** 2 + (self_c[1] - cell_c[1]) ** 2) ** 0.5)
+
+            else:
+                ranges.append(1000000)
+
+        # НЕ ПЫТАЙСЯ РАЗОБРАТЬСЯ В ТОМ, ЧТО НИЖЕ
+        target_cell_pos = [(ranges.index(min(ranges)) + 1) % b.width - 1,
+                           math.ceil((ranges.index(min(ranges)) + 1) / b.width) - 1]
+        if target_cell_pos[0] == -1:
+            target_cell_pos[0] = b.width - 1
+        # НЕ ПЫТАЙСЯ РАЗОБРАТЬСЯ В ТОМ, ЧТО ВЫШЕ
+
+        b.board[self.y][self.x][0] = 0  # Тут та же самая ошибка
+        self.x, self.y = target_cell_pos[0], target_cell_pos[1]
+        self.rect.x = self.left + self.x * self.cell_size
+        self.rect.y = self.top + self.y * self.cell_size
+        if b.board[self.y][self.x][0] == self.lvl:
+            self.lvl += 1
+            # Тут должна быть строчка, удаляющая печеньку, на которую встала другая, которая
+            # одинакого с ней уровня
+            self.image = load_image(f'lvl{str(self.lvl)}_sprite.png', -1)
+        b.board[self.y][self.x][0] = self.lvl  # Тут тоже
 
 
 if __name__ == '__main__':
     pygame.init()
     pygame.display.set_caption('Merge Game')
+    pygame.mouse.set_visible(False)
     size = width, height = 1280, 720
     screen = pygame.display.set_mode(size)
-    pygame.mouse.set_visible(False)
     fon = pygame.transform.scale(load_image('fon.jpg'), (width, height))
-    cur_sprite = pygame.sprite.Group()
-    cur = Cursor(cur_sprite)
 
-    start_screen()
-
+    cur_group = pygame.sprite.Group()
     cells_group = pygame.sprite.Group()
     panels_group = pygame.sprite.Group()
     cookies_group = pygame.sprite.Group()
+
+    cur = Cursor()
+
+    start_screen()
 
     b = Board(3, 3)
     board_info = b.get_info()
@@ -163,22 +192,26 @@ if __name__ == '__main__':
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 point = pygame.mouse.get_pos()
                 x0, y0 = event.pos
-                if pygame.sprite.spritecollide(cur, cookies_group, False):
+                if pygame.sprite.spritecollideany(cur, cookies_group):
+                    collided_cookies = pygame.sprite.spritecollide(cur, cookies_group, False)
                     moving = True
             elif event.type == pygame.MOUSEBUTTONUP:
+                if moving:
+                    for cookie in collided_cookies:
+                        cookie.go_to_nearest_cell()
                 moving = False
             if event.type == pygame.MOUSEMOTION:
                 if moving:
-                    w, h = event.pos[0] - x0, event.pos[1] - y0
+                    dx, dy = event.pos[0] - x0, event.pos[1] - y0
+                    for cookie in collided_cookies:
+                        cookie.update(dx, dy)
                     x0, y0 = event.pos
-                    cookies_group.update(w, h)
-                    w, h = 0, 0
-            cur_sprite.update(event)
+            cur.update(event)
         cells_group.draw(screen)
         panels_group.draw(screen)
         cookies_group.draw(screen)
         if cur.visible:
-            cur_sprite.draw(screen)
+            cur_group.draw(screen)
         pygame.display.flip()
         pygame.time.Clock().tick(FPS)
     pygame.quit()
