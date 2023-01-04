@@ -124,8 +124,8 @@ class Cookie(pygame.sprite.Sprite):
 
         self.x, self.y = pos[0], pos[1]
         self.rect = self.image.get_rect()
-        self.rect.x = 25 + self.left + self.x * self.cell_size
-        self.rect.y = 25 + self.top + self.y * self.cell_size
+        self.rect.x = 13 + self.left + self.x * self.cell_size
+        self.rect.y = 13 + self.top + self.y * self.cell_size
 
     def update(self, x, y):
         self.rect.x += x
@@ -149,8 +149,8 @@ class Cookie(pygame.sprite.Sprite):
 
         b.board[self.y][self.x][0] = 0
         self.x, self.y = target_cell_pos[0], target_cell_pos[1]
-        self.rect.x = 25 + self.left + self.x * self.cell_size
-        self.rect.y = 25 + self.top + self.y * self.cell_size
+        self.rect.x = 13 + self.left + self.x * self.cell_size
+        self.rect.y = 13 + self.top + self.y * self.cell_size
 
         if b.board[self.y][self.x][0] == self.lvl:
             pygame.sprite.spritecollide(self, cookies_group, True)
