@@ -28,7 +28,7 @@ class Board:
     def __init__(self, width_in_cells, height_in_cells):
         self.width = width_in_cells
         self.height = height_in_cells
-        self.board = [[[0, 1]] * self.width for _ in range(self.height)]
+        self.board = [[[0, 1] for _ in range(self.width)] for _ in range(self.height)]
         self.cell_size = 100
         self.left = width // 2 - self.cell_size * self.width // 2
         self.top = height // 2 - self.cell_size * self.height // 2
