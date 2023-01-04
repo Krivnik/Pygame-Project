@@ -23,6 +23,7 @@ def render_environment():
     Cookie(1, (1, 1), board_info)
     Cookie(1, (0, 0), board_info)
     Cookie(2, (2, 2), board_info)
+    Cookie(3, (1, 0), board_info)
 
 
 class Board:
@@ -118,12 +119,13 @@ class Cookie(pygame.sprite.Sprite):
         self.width, self.height, self.top, self.left, self.cell_size = info
         self.lvl = lvl
         self.image = load_image(f'lvl{str(lvl)}_sprite.png', -1)
+        self.mask = pygame.mask.from_surface(self.image)
         b.board[pos[1]][pos[0]][0] = lvl
 
         self.x, self.y = pos[0], pos[1]
         self.rect = self.image.get_rect()
-        self.rect.x = self.left + self.x * self.cell_size
-        self.rect.y = self.top + self.y * self.cell_size
+        self.rect.x = 12 + self.left + self.x * self.cell_size
+        self.rect.y = 12 + self.top + self.y * self.cell_size
 
     def update(self, x, y):
         self.rect.x += x
@@ -147,8 +149,8 @@ class Cookie(pygame.sprite.Sprite):
 
         b.board[self.y][self.x][0] = 0
         self.x, self.y = target_cell_pos[0], target_cell_pos[1]
-        self.rect.x = self.left + self.x * self.cell_size
-        self.rect.y = self.top + self.y * self.cell_size
+        self.rect.x = 12 + self.left + self.x * self.cell_size
+        self.rect.y = 12 + self.top + self.y * self.cell_size
 
         if b.board[self.y][self.x][0] == self.lvl:
             pygame.sprite.spritecollide(self, cookies_group, True)
