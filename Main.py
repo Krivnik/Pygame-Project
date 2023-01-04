@@ -22,6 +22,7 @@ def render_environment():
 
     Cookie(1, (1, 1), board_info)
     Cookie(1, (0, 0), board_info)
+    Cookie(2, (2, 2), board_info)
 
 
 class Board:
@@ -155,8 +156,8 @@ class Cookie(pygame.sprite.Sprite):
         self.rect.y = self.top + self.y * self.cell_size
         if b.board[self.y][self.x][0] == self.lvl:
             self.lvl += 1
-            # Тут должна быть строчка, удаляющая печеньку, на которую встала другая, которая
-            # одинакого с ней уровня
+            del_sprite = pygame.sprite.spritecollideany(self, cookies_group)
+            del_sprite.kill()
             self.image = load_image(f'lvl{str(self.lvl)}_sprite.png', -1)
         b.board[self.y][self.x][0] = self.lvl  # Тут тоже
 
