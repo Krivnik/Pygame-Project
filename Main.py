@@ -20,10 +20,15 @@ def render_environment():
     shop.rect.x = 190
     shop.rect.y = 570
 
-    Cookie(1, (1, 1), board_info)
-    Cookie(1, (0, 0), board_info)
-    Cookie(2, (2, 2), board_info)
-    Cookie(3, (1, 0), board_info)
+    for lvl in range(1, 7):
+        ShopButton(lvl)
+
+    Cookie(5, (1, 1), board_info)
+    Cookie(5, (0, 0), board_info)
+    Cookie(6, (2, 2), board_info)
+    Cookie(7, (1, 0), board_info)
+    Cookie(8, (2, 0), board_info)
+    Cookie(9, (0, 2), board_info)
 
 
 class Board:
@@ -118,7 +123,7 @@ class Cookie(pygame.sprite.Sprite):
         super().__init__(cookies_group)
         self.width, self.height, self.top, self.left, self.cell_size = info
         self.lvl = lvl
-        self.image = load_image(f'lvl{str(lvl)}_sprite.png', -1)
+        self.image = load_image(f'lvl{str(lvl)}_sprite.png')
         self.mask = pygame.mask.from_surface(self.image)
         b.board[pos[1]][pos[0]][0] = lvl
 
@@ -167,9 +172,20 @@ class Cookie(pygame.sprite.Sprite):
                 b.board[start_y][start_x][0], b.board[self.y][self.x][0]
 
 
+class ShopButton(pygame.sprite.Sprite):
+    def __init__(self, lvl):
+        super().__init__(shop_buttons_group)
+        self.lvl = lvl
+        self.image = load_image(f'shop_cell{str(lvl)}.png')
+
+        self.rect = self.image.get_rect()
+        self.rect.x = 215 + (self.lvl - 1) * 150
+        self.rect.y = 595
+
+
 if __name__ == '__main__':
     pygame.init()
-    pygame.display.set_caption('Merge Game')
+    pygame.display.set_caption('Merge Cakes')
     pygame.mouse.set_visible(False)
     size = width, height = 1280, 720
     screen = pygame.display.set_mode(size)
@@ -179,6 +195,7 @@ if __name__ == '__main__':
     cells_group = pygame.sprite.Group()
     panels_group = pygame.sprite.Group()
     cookies_group = pygame.sprite.Group()
+    shop_buttons_group = pygame.sprite.Group()
 
     cur = Cursor()
 
@@ -215,6 +232,7 @@ if __name__ == '__main__':
             cur.update(event)
         cells_group.draw(screen)
         panels_group.draw(screen)
+        shop_buttons_group.draw(screen)
         cookies_group.draw(screen)
         if cur.visible:
             cur_group.draw(screen)
