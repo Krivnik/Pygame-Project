@@ -4,8 +4,6 @@ import sys
 from image_loading import load_image
 from start_screen import start_screen
 
-FPS = 120
-
 
 def render_environment():
     upgrades = Panel('V')
@@ -23,12 +21,10 @@ def render_environment():
     for lvl in range(1, 7):
         ShopButton(lvl)
 
-    Cookie(5, (1, 1), board_info)
-    Cookie(5, (0, 0), board_info)
-    Cookie(6, (2, 2), board_info)
-    Cookie(7, (1, 0), board_info)
-    Cookie(8, (2, 0), board_info)
-    Cookie(9, (0, 2), board_info)
+    Cookie(1, (1, 1), board_info)
+
+
+balance = 0
 
 
 class Board:
@@ -123,6 +119,7 @@ class Cookie(pygame.sprite.Sprite):
         super().__init__(cookies_group)
         self.width, self.height, self.top, self.left, self.cell_size = info
         self.lvl = lvl
+        self.income = 0  # Тут будет формула для расчета дохода печеньки определенного уровня
         self.image = load_image(f'lvl{str(lvl)}_sprite.png')
         self.mask = pygame.mask.from_surface(self.image)
         b.board[pos[1]][pos[0]][0] = lvl
@@ -174,13 +171,42 @@ class Cookie(pygame.sprite.Sprite):
 
 class ShopButton(pygame.sprite.Sprite):
     def __init__(self, lvl):
-        super().__init__(shop_buttons_group)
+        super().__init__(buttons_group, shop_buttons_group)
         self.lvl = lvl
-        self.image = load_image(f'shop_cell{str(lvl)}.png')
+        self.price = 0  # Тут будет формула для расчета цены печеньки определенного уровня
+        if self.lvl == 1:
+            self.enabled = True
+            self.image = load_image(f'shop_cell{str(self.lvl)}.png')
+        else:
+            self.enabled = False
+            self.image = load_image(f'locked_shop_cell.png')
 
         self.rect = self.image.get_rect()
         self.rect.x = 215 + (self.lvl - 1) * 150
         self.rect.y = 595
+
+    def click(self):
+        global balance
+        if self.price <= balance:
+            for row in range(len(b.board)):
+                for cell in range(len(b.board[row])):
+                    if b.board[row][cell][0] == 0:
+                        Cookie(self.lvl, (cell, row), b.get_info())
+                        balance -= self.price
+                        self.price = int(self.price * 1)  # 1 это затычка
+                        return
+                    if row == len(b.board) - 1 and cell == len(b.board[row]) - 1:
+                        print('ВСЕ КЛЕТКИ ЗАНЯТЫ')  # Это будет выводиться на экран
+        else:
+            print('ТЫ БОМЖАРА')  # Это тоже (только сообщение будет более гуманным)
+
+    def update_enabled(self):
+        if not self.enabled:
+            for row in b.board:
+                for cell in row:
+                    if cell[0] == self.lvl + 4:
+                        self.enabled = True
+                        self.image = load_image(f'shop_cell{str(self.lvl)}.png')
 
 
 if __name__ == '__main__':
@@ -195,6 +221,7 @@ if __name__ == '__main__':
     cells_group = pygame.sprite.Group()
     panels_group = pygame.sprite.Group()
     cookies_group = pygame.sprite.Group()
+    buttons_group = pygame.sprite.Group()
     shop_buttons_group = pygame.sprite.Group()
 
     cur = Cursor()
@@ -213,16 +240,23 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                point = pygame.mouse.get_pos()
                 x0, y0 = event.pos
                 if pygame.sprite.spritecollideany(cur, cookies_group):
                     collided_cookies = pygame.sprite.spritecollide(cur, cookies_group, False)
                     moving = True
+                elif pygame.sprite.spritecollideany(cur, buttons_group):
+                    collided_buttons = pygame.sprite.spritecollide(cur, shop_buttons_group, False)
+                    for btn in collided_buttons:
+                        if btn.enabled:
+                            btn.click()
+                        else:
+                            print(f'СНАЧАЛА ОТКРОЙ ПИРОГ {btn.lvl + 4} УРОВНЯ')  # Это тоже будет
+                            # выводиться на экран
             elif event.type == pygame.MOUSEBUTTONUP:
                 if moving:
                     for cookie in collided_cookies:
                         cookie.go_to_nearest_cell()
-                moving = False
+                        moving = False
             if event.type == pygame.MOUSEMOTION:
                 if moving:
                     dx, dy = event.pos[0] - x0, event.pos[1] - y0
@@ -230,6 +264,8 @@ if __name__ == '__main__':
                         cookie.update(dx, dy)
                     x0, y0 = event.pos
             cur.update(event)
+        for btn in shop_buttons_group:
+            btn.update_enabled()
         cells_group.draw(screen)
         panels_group.draw(screen)
         shop_buttons_group.draw(screen)
@@ -237,5 +273,5 @@ if __name__ == '__main__':
         if cur.visible:
             cur_group.draw(screen)
         pygame.display.flip()
-        pygame.time.Clock().tick(FPS)
+        pygame.time.Clock().tick(120)
     pygame.quit()
