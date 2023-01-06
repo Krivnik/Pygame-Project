@@ -1,3 +1,5 @@
+import random
+
 import pygame
 import math
 import sys
@@ -22,6 +24,16 @@ def render_environment():
         ShopButton(lvl)
 
     Cookie(1, (1, 1), board_info)
+    Cookie(5, (2, 1), board_info)
+    Cookie(5, (0, 1), board_info)
+
+def create_particles(position):
+    # количество создаваемых частиц
+    particle_count = 20
+    # возможные скорости
+    numbers = range(-5, 6)
+    for _ in range(particle_count):
+        Particle(position, random.choice(numbers), random.choice(numbers))
 
 
 balance = 0
@@ -207,6 +219,39 @@ class ShopButton(pygame.sprite.Sprite):
                     if cell[0] == self.lvl + 4:
                         self.enabled = True
                         self.image = load_image(f'shop_cell{str(self.lvl)}.png')
+                        create_particles((self.rect.x + 50, self.rect.y + 50))
+
+
+class Particle(pygame.sprite.Sprite):
+    # сгенерируем частицы разного размера
+    fire = [load_image("star.png")]
+    for scale in (5, 10, 20):
+        fire.append(pygame.transform.scale(fire[0], (scale, scale)))
+
+    def __init__(self, pos, dx, dy):
+        super().__init__(particle_group)
+        self.image = random.choice(self.fire)
+        self.rect = self.image.get_rect()
+
+        # у каждой частицы своя скорость — это вектор
+        self.velocity = [dx, dy]
+        # и свои координаты
+        self.rect.x, self.rect.y = pos
+
+        # гравитация будет одинаковой (значение константы)
+        self.gravity = 0.1
+
+    def update(self):
+        # применяем гравитационный эффект:
+        # движение с ускорением под действием гравитации
+        self.velocity[1] += self.gravity
+        # перемещаем частицу
+        self.rect.x += self.velocity[0]
+        self.rect.y += self.velocity[1]
+        # убиваем, если частица ушла за экран
+        if not self.rect.colliderect(screen_rect):
+            self.kill()
+
 
 
 if __name__ == '__main__':
@@ -214,6 +259,7 @@ if __name__ == '__main__':
     pygame.display.set_caption('Merge Cakes')
     pygame.mouse.set_visible(False)
     size = width, height = 1280, 720
+    screen_rect = (0, 0, width, height)
     screen = pygame.display.set_mode(size)
     fon = pygame.transform.scale(load_image('fon.jpg'), (width, height))
 
@@ -223,6 +269,7 @@ if __name__ == '__main__':
     cookies_group = pygame.sprite.Group()
     buttons_group = pygame.sprite.Group()
     shop_buttons_group = pygame.sprite.Group()
+    particle_group = pygame.sprite.Group()
 
     cur = Cursor()
 
@@ -266,12 +313,14 @@ if __name__ == '__main__':
             cur.update(event)
         for btn in shop_buttons_group:
             btn.update_enabled()
+        particle_group.update()
         cells_group.draw(screen)
         panels_group.draw(screen)
         shop_buttons_group.draw(screen)
         cookies_group.draw(screen)
         if cur.visible:
             cur_group.draw(screen)
+        particle_group.draw(screen)
         pygame.display.flip()
         pygame.time.Clock().tick(120)
     pygame.quit()
