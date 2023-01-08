@@ -19,12 +19,18 @@ def render_environment():
     shop.rect.x = 190
     shop.rect.y = 570
 
+    b_panel = Panel('B')
+    b_panel.rect.x = 1120
+    b_panel.rect.y = 10
+
+    for i in range(6):
+        price = Panel('P')
+        price.rect.x = 215 + i * 150
+        price.rect.y = 686
     for lvl in range(1, 7):
         ShopButton(lvl)
 
     Cookie(1, (1, 1), board_info)
-    Cookie(5, (2, 1), board_info)
-    Cookie(5, (0, 1), board_info)
 
 
 def create_particles(position):
@@ -34,7 +40,7 @@ def create_particles(position):
         Particle(position, random.choice(numbers), random.choice(numbers))
 
 
-balance = 0
+balance = 25000
 
 
 class Board:
@@ -100,11 +106,19 @@ class Cell(pygame.sprite.Sprite):
 
 class Panel(pygame.sprite.Sprite):
     def __init__(self, t):
-        super().__init__(panels_group)
+        super().__init__()
         if t == 'V':
             self.image = load_image('vertical panel.png', -1)
+            self.add(panels_group)
         elif t == 'H':
             self.image = load_image('horizontal panel.png', -1)
+            self.add(panels_group)
+        elif t == 'B':
+            self.image = load_image('balance panel.png', -1)
+            self.add(panels_group)
+        elif t == 'P':
+            self.image = load_image('price panel.png', -1)
+            self.add(price_panels_group)
         self.rect = self.image.get_rect()
 
 
@@ -129,7 +143,8 @@ class Cookie(pygame.sprite.Sprite):
         super().__init__(cookies_group)
         self.width, self.height, self.top, self.left, self.cell_size = info
         self.lvl = lvl
-        self.income = 0  # Тут будет формула для расчета дохода печеньки определенного уровня
+        self.income = int([0, 1, 2, 4, 9, 19, 40, 85, 178, 375, 790][self.lvl]
+                          * b.board[pos[1]][pos[0]][1])
         self.image = load_image(f'lvl{str(lvl)}_sprite.png')
         self.mask = pygame.mask.from_surface(self.image)
         b.board[pos[1]][pos[0]][0] = lvl
@@ -178,12 +193,16 @@ class Cookie(pygame.sprite.Sprite):
             b.board[self.y][self.x][0], b.board[start_y][start_x][0] = \
                 b.board[start_y][start_x][0], b.board[self.y][self.x][0]
 
+    def give_profit(self):
+        global balance
+        balance += self.income
+
 
 class ShopButton(pygame.sprite.Sprite):
     def __init__(self, lvl):
         super().__init__(buttons_group, shop_buttons_group)
         self.lvl = lvl
-        self.price = 0  # Тут будет формула для расчета цены печеньки определенного уровня
+        self.price = [0, 50, 750, 2500, 7500, 25000, 75000][self.lvl]
         if self.lvl == 1:
             self.enabled = True
             self.image = load_image(f'shop_cell{str(self.lvl)}.png')
@@ -203,12 +222,12 @@ class ShopButton(pygame.sprite.Sprite):
                     if b.board[row][cell][0] == 0:
                         Cookie(self.lvl, (cell, row), b.get_info())
                         balance -= self.price
-                        self.price = int(self.price * 1)  # 1 это затычка
+                        self.price = int(self.price * 1.1)
                         return
                     if row == len(b.board) - 1 and cell == len(b.board[row]) - 1:
                         print('ВСЕ КЛЕТКИ ЗАНЯТЫ')  # Это будет выводиться на экран
         else:
-            print('ТЫ БОМЖАРА')  # Это тоже (только сообщение будет более гуманным)
+            print('НЕДОСТАТОЧНО СРЕДСТВ')  # Это тоже
 
     def update_enabled(self):
         if not self.enabled:
@@ -255,6 +274,7 @@ if __name__ == '__main__':
     cur_group = pygame.sprite.Group()
     cells_group = pygame.sprite.Group()
     panels_group = pygame.sprite.Group()
+    price_panels_group = pygame.sprite.Group()
     cookies_group = pygame.sprite.Group()
     buttons_group = pygame.sprite.Group()
     shop_buttons_group = pygame.sprite.Group()
@@ -268,6 +288,7 @@ if __name__ == '__main__':
     board_info = b.get_info()
     render_environment()
 
+    counter = 0
     running = True
     moving = False
     while running:
@@ -306,10 +327,43 @@ if __name__ == '__main__':
         cells_group.draw(screen)
         panels_group.draw(screen)
         shop_buttons_group.draw(screen)
+        price_panels_group.draw(screen)
+
+        price_text = [f'{sh_b.price}$' for sh_b in shop_buttons_group]
+        font = pygame.font.SysFont('segoe script', 16)  # Шрифт не конечный
+        text_coord = 215
+        for line in price_text:
+            string_rendered = font.render(line, True, 'black')
+            intro_rect = string_rendered.get_rect()
+            intro_rect.y = 686  # Зависит от шрифта
+            text_coord += (50 - intro_rect.width / 2)
+            intro_rect.x = text_coord
+            screen.blit(string_rendered, intro_rect)
+            text_coord += 100 + intro_rect.width / 2
+
+        balance_text = [f'{balance}$', f'{sum([c.income for c in cookies_group])}$/c']
+        font_size = 30
+        text_coord = -15
+        for line in balance_text:
+            font_size -= 5  # Согласен, структура дебильная, но как сказал один великий лентяй:
+            text_coord += 30  # "Итак сойдет"
+            font = pygame.font.SysFont('segoe script', font_size)  # Шрифт не конечный
+            string_rendered = font.render(line, True, 'black')
+            intro_rect = string_rendered.get_rect()
+            intro_rect.y = text_coord
+            intro_rect.x = 1120 + (75 - intro_rect.width / 2)
+            screen.blit(string_rendered, intro_rect)
+
         cookies_group.draw(screen)
         particle_group.draw(screen)
         if cur.visible:
             cur_group.draw(screen)
         pygame.display.flip()
+        if counter % 60 == 0:  # Я не понимаю, почему так происходит,
+            # но если поставить 120, то прибыль будет приходить раз в 2 секунды
+            # (Возможно на мониторе со 120 Гц картина будет другая)
+            for cookie in cookies_group:
+                cookie.give_profit()
+        counter += 1
         pygame.time.Clock().tick(120)
     pygame.quit()
