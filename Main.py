@@ -7,21 +7,21 @@ from start_screen import start_screen
 
 
 def render_environment():
-    upgrades = Panel('V')
-    upgrades.rect.x = 75
-    upgrades.rect.y = 135
+    cookies_info = Panel('Vl')
+    cookies_info.rect.x = 25
+    cookies_info.rect.y = 75
 
-    boosts = Panel('V')
+    boosts = Panel('Vr')
     boosts.rect.x = 1055
-    boosts.rect.y = 135
+    boosts.rect.y = 125
 
     shop = Panel('H')
     shop.rect.x = 190
     shop.rect.y = 570
 
     b_panel = Panel('B')
-    b_panel.rect.x = 1120
-    b_panel.rect.y = 10
+    b_panel.rect.x = 1105
+    b_panel.rect.y = 25
 
     for i in range(6):
         price = Panel('P')
@@ -107,8 +107,11 @@ class Cell(pygame.sprite.Sprite):
 class Panel(pygame.sprite.Sprite):
     def __init__(self, t):
         super().__init__()
-        if t == 'V':
-            self.image = load_image('vertical panel.png', -1)
+        if t == 'Vr':
+            self.image = load_image('vertical right panel.png', -1)
+            self.add(panels_group)
+        elif t == 'Vl':
+            self.image = load_image('vertical left panel.png', -1)
             self.add(panels_group)
         elif t == 'H':
             self.image = load_image('horizontal panel.png', -1)
@@ -127,6 +130,7 @@ class Cursor(pygame.sprite.Sprite):
         super().__init__(cur_group)
         self.image = load_image("arrow.png")
         self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = pygame.mouse.get_pos()
         self.visible = True
 
     def update(self, *args):
@@ -193,10 +197,6 @@ class Cookie(pygame.sprite.Sprite):
             b.board[self.y][self.x][0], b.board[start_y][start_x][0] = \
                 b.board[start_y][start_x][0], b.board[self.y][self.x][0]
 
-    def give_profit(self):
-        global balance
-        balance += self.income
-
 
 class ShopButton(pygame.sprite.Sprite):
     def __init__(self, lvl):
@@ -252,7 +252,7 @@ class Particle(pygame.sprite.Sprite):
         self.velocity = [dx, dy]
         self.rect.x, self.rect.y = pos
 
-        self.gravity = 0.075
+        self.gravity = 0.09
 
     def update(self):
         self.velocity[1] += self.gravity
@@ -343,7 +343,7 @@ if __name__ == '__main__':
 
         balance_text = [f'{balance}$', f'{sum([c.income for c in cookies_group])}$/c']
         font_size = 30
-        text_coord = -15
+        text_coord = 0
         for line in balance_text:
             font_size -= 5  # Согласен, структура дебильная, но как сказал один великий лентяй:
             text_coord += 30  # "Итак сойдет"
@@ -351,7 +351,7 @@ if __name__ == '__main__':
             string_rendered = font.render(line, True, 'black')
             intro_rect = string_rendered.get_rect()
             intro_rect.y = text_coord
-            intro_rect.x = 1120 + (75 - intro_rect.width / 2)
+            intro_rect.x = 1105 + (75 - intro_rect.width / 2)
             screen.blit(string_rendered, intro_rect)
 
         cookies_group.draw(screen)
@@ -362,8 +362,7 @@ if __name__ == '__main__':
         if counter % 60 == 0:  # Я не понимаю, почему так происходит,
             # но если поставить 120, то прибыль будет приходить раз в 2 секунды
             # (Возможно на мониторе со 120 Гц картина будет другая)
-            for cookie in cookies_group:
-                cookie.give_profit()
+            balance += sum([c.income for c in cookies_group])
         counter += 1
         pygame.time.Clock().tick(120)
     pygame.quit()
