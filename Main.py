@@ -227,9 +227,9 @@ class ShopButton(pygame.sprite.Sprite):
                         self.price = int(self.price * 1.1)
                         return
                     if row == len(b.board) - 1 and cell == len(b.board[row]) - 1:
-                        print('ВСЕ КЛЕТКИ ЗАНЯТЫ')  # Это будет выводиться на экран
+                        print('ВСЕ КЛЕТКИ ЗАНЯТЫ')
         else:
-            print('НЕДОСТАТОЧНО СРЕДСТВ')  # Это тоже
+            print('НЕДОСТАТОЧНО СРЕДСТВ')
 
     def update_enabled(self):
         if not self.enabled:
@@ -247,11 +247,11 @@ class BoostButton(pygame.sprite.Sprite):
         self.type = t
         if self.type == 1:
             self.lvl = 1
-            self.price = [0, 1000, 7500, 25000, -1][self.lvl]
+            self.price = 1000
         elif self.type == 2:
             pass
         elif self.type == 3:
-            pass
+            self.price = int(sum([sh_b.price for sh_b in shop_buttons_group]) / 6 / 10)
         self.message = f'СНАЧАЛА ОТКРОЙ ПИРОГ {self.type + 3} УРОВНЯ'
         self.enabled = False
         self.image = load_image(f'locked_cell.png')
@@ -261,7 +261,7 @@ class BoostButton(pygame.sprite.Sprite):
         self.rect.y = 150 + (self.type - 1) * 150
 
     def click(self):
-        global balance
+        global balance, x3boost_counter
         if self.type == 1:
             if self.price <= balance and self.lvl < 4:
                 if self.lvl % 2 != 0:
@@ -278,7 +278,13 @@ class BoostButton(pygame.sprite.Sprite):
         elif self.type == 2:
             pass
         elif self.type == 3:
-            pass
+            if self.price <= balance and x3boost_counter % 300 == 0:
+                x3boost_counter += 1
+                balance -= self.price
+            elif x3boost_counter % 18000 != 0:
+                print('БУСТ УЖЕ ДЕЙСТВУЕТ')
+            else:
+                print('НЕДОСТАТОЧНО СРЕДСТВ')
 
     def update_enabled(self):
         if not self.enabled:
@@ -288,6 +294,10 @@ class BoostButton(pygame.sprite.Sprite):
                         self.enabled = True
                         self.image = load_image(f'boost_cell{str(self.type)}.png')
                         create_particles((self.rect.x + 50, self.rect.y + 50))
+
+        if self.type == 3:
+            self.price = int(sum([sh_b.price for sh_b in shop_buttons_group]) / 6 / 10)  # Я не знаю,
+            # куда еще можно закинуть это обновление цены
 
 
 class Particle(pygame.sprite.Sprite):
@@ -341,6 +351,7 @@ if __name__ == '__main__':
     render_environment()
 
     counter = 0
+    x3boost_counter = 0
     running = True
     moving = False
     while running:
@@ -359,7 +370,7 @@ if __name__ == '__main__':
                         if btn.enabled:
                             btn.click()
                         else:
-                            print(btn.message)  # Это тоже будет выводиться на экран
+                            print(btn.message)
             elif event.type == pygame.MOUSEBUTTONUP:
                 if moving:
                     for cookie in collided_cookies:
@@ -380,33 +391,41 @@ if __name__ == '__main__':
         buttons_group.draw(screen)
         price_panels_group.draw(screen)
 
+        font = pygame.font.SysFont('segoe script', 16)
+
         cookies_price = [f'{sh_b.price}$' for sh_b in shop_buttons_group]
-        boost1 = [boost for boost in boost_buttons_group if boost.type == 1][0]
-        boost1_price = ['0$', '1000$', '7500$', '25000$', 'макс. ур.'][boost1.lvl]
-        font = pygame.font.SysFont('segoe script', 16)  # Шрифт не конечный
-        text_coord = 215
+        text_coord1 = 215
         for line in cookies_price:
             string_rendered = font.render(line, True, 'black')
             intro_rect = string_rendered.get_rect()
-            intro_rect.y = 685  # Зависит от шрифта
-            text_coord += (50 - intro_rect.width / 2)
-            intro_rect.x = text_coord
+            intro_rect.y = 685
+            text_coord1 += (50 - intro_rect.width / 2)
+            intro_rect.x = text_coord1
             screen.blit(string_rendered, intro_rect)
-            text_coord += 100 + intro_rect.width / 2
+            text_coord1 += 100 + intro_rect.width / 2
 
-        string_rendered = font.render(boost1_price, True, 'black')
-        intro_rect = string_rendered.get_rect()
-        intro_rect.x = 1080 + (50 - intro_rect.width / 2)
-        intro_rect.y = 240
-        screen.blit(string_rendered, intro_rect)
+        boost1 = [boost for boost in boost_buttons_group if boost.type == 1][0]
+        boost1_price = ['0$', '1000$', '7500$', '25000$', 'макс. ур.'][boost1.lvl]
+        boost3 = [boost for boost in boost_buttons_group if boost.type == 3][0]
+        boost3_price = f'{boost3.price}$'
+        text_coord2 = -60
+        for prc in [boost1_price, boost3_price]:
+            string_rendered = font.render(prc, True, 'black')
+            intro_rect = string_rendered.get_rect()
+            intro_rect.x = 1080 + (50 - intro_rect.width / 2)
+            text_coord2 += 300
+            intro_rect.y = text_coord2
+            screen.blit(string_rendered, intro_rect)
 
         balance_text = [f'{balance}$', f'{sum([c.income for c in cookies_group])}$/c']
+        if x3boost_counter % 300 != 0:
+            balance_text[1] = f'{3 * sum([c.income for c in cookies_group])}$/c'
         font_size = 30
         text_coord = 0
         for line in balance_text:
-            font_size -= 5  # Согласен, структура дебильная, но как сказал один великий лентяй:
-            text_coord += 30  # "Итак сойдет"
-            font = pygame.font.SysFont('segoe script', font_size)  # Шрифт не конечный
+            font_size -= 5
+            text_coord += 30
+            font = pygame.font.SysFont('segoe script', font_size)
             string_rendered = font.render(line, True, 'black')
             intro_rect = string_rendered.get_rect()
             intro_rect.y = text_coord
@@ -418,10 +437,15 @@ if __name__ == '__main__':
         if cur.visible:
             cur_group.draw(screen)
         pygame.display.flip()
-        if counter % 60 == 0:  # Я не понимаю, почему так происходит,
-            # но если поставить 120, то прибыль будет приходить раз в 2 секунды
-            # (Возможно на мониторе со 120 Гц картина будет другая)
-            balance += sum([c.income for c in cookies_group])
+        if counter % 54 == 0:  # я не знаю почему, но у меня значение такое
+            if x3boost_counter % 300 != 0:
+                balance += 3 * sum([c.income for c in cookies_group])
+                x3boost_counter += 1
+                print(x3boost_counter)
+            elif x3boost_counter % 300 == 0:
+                pass
+            else:
+                balance += sum([c.income for c in cookies_group])
         counter += 1
         pygame.time.Clock().tick(120)
     pygame.quit()
