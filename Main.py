@@ -1,7 +1,7 @@
-import random
 import pygame
-import math
 import sys
+from math import ceil
+from random import choice
 from image_loading import load_image
 from start_screen import start_screen
 
@@ -23,21 +23,27 @@ def render_environment():
     b_panel.rect.x = 1105
     b_panel.rect.y = 25
 
+    for lvl in range(1, 7):
+        ShopButton(lvl)
     for i in range(6):
         price = Panel('P')
         price.rect.x = 215 + i * 150
-        price.rect.y = 686
-    for lvl in range(1, 7):
-        ShopButton(lvl)
+        price.rect.y = 685
 
-    Cookie(1, (1, 1), board_info)
+    for _ in range(1, 4):
+        BoostButton(_)
+    for i in range(0, 3, 2):
+        price = Panel('P')
+        price.rect.x = 1080
+        price.rect.y = 240 + i * 150
+    Cookie(1, (1, 1))
 
 
 def create_particles(position):
     particle_count = 30
     numbers = range(-5, 5)
     for _ in range(particle_count):
-        Particle(position, random.choice(numbers), random.choice(numbers))
+        Particle(position, choice(numbers), choice(numbers))
 
 
 balance = 25000
@@ -59,38 +65,33 @@ class Board:
                 c.rect.y = self.top + h * self.cell_size
 
     def expand(self, width_in_cells, height_in_cells):
-        if width_in_cells > self.width and height_in_cells > self.height:
+        if width_in_cells > self.width or height_in_cells > self.height:
+            start_width, start_height = self.width, self.height
             self.width = width_in_cells
             self.height = height_in_cells
             self.left = width // 2 - self.cell_size * self.width // 2
             self.top = height // 2 - self.cell_size * self.height // 2
             for row in self.board:
-                row.append([0, 1])
-            self.board.append([[0, 1]] * self.width)
+                for _ in range(self.width - start_width):
+                    row += [[0, 1]]
+            for row in range(self.height - start_height):
+                self.board += [[[0, 1] for _ in range(self.width)]]
+
+            for cell in cells_group:
+                cell.kill()
 
             for h in range(self.height):
                 for w in range(self.width):
                     c = Cell(w, h)
                     c.rect.x = self.left + w * self.cell_size
                     c.rect.y = self.top + h * self.cell_size
+
+            for c in cookies_group:
+                c.width, c.height, c.top, c.left, c.cell_size = b.get_info()
+                c.rect.x = 13 + c.left + c.x * c.cell_size
+                c.rect.y = 13 + c.top + c.y * c.cell_size
         else:
             print('ПОЛЕ ДОЛЖНО РАСШИРЯТЬСЯ')
-
-    def get_cell(self, mouse_pos):
-        width_in_pixels = self.width * self.cell_size
-        height_in_pixels = self.height * self.cell_size
-        if (self.left < mouse_pos[0] < self.left + width_in_pixels) and \
-                (self.top < mouse_pos[1] < self.top + height_in_pixels):
-            cell_coords = (mouse_pos[0] - self.left) // self.cell_size, \
-                          (mouse_pos[1] - self.top) // self.cell_size
-            return cell_coords
-        return None
-
-    def on_click(self, cell_coords):
-        pass
-
-    def get_click(self, mouse_pos):
-        self.on_click(self.get_cell(mouse_pos))
 
     def get_info(self):
         return self.width, self.height, self.top, self.left, self.cell_size
@@ -143,9 +144,9 @@ class Cursor(pygame.sprite.Sprite):
 
 
 class Cookie(pygame.sprite.Sprite):
-    def __init__(self, lvl, pos, info):
+    def __init__(self, lvl, pos):
         super().__init__(cookies_group)
-        self.width, self.height, self.top, self.left, self.cell_size = info
+        self.width, self.height, self.top, self.left, self.cell_size = b.get_info()
         self.lvl = lvl
         self.income = int([0, 1, 2, 4, 9, 19, 40, 85, 178, 375, 790][self.lvl]
                           * b.board[pos[1]][pos[0]][1])
@@ -171,7 +172,7 @@ class Cookie(pygame.sprite.Sprite):
             ranges.append(((self_c[0] - cell_c[0]) ** 2 + (self_c[1] - cell_c[1]) ** 2) ** 0.5)
 
         target_cell_pos = [(ranges.index(min(ranges)) + 1) % b.width - 1,
-                           math.ceil((ranges.index(min(ranges)) + 1) / b.width) - 1]
+                           ceil((ranges.index(min(ranges)) + 1) / b.width) - 1]
         if target_cell_pos[0] == -1:
             target_cell_pos[0] = b.width - 1
 
@@ -187,7 +188,7 @@ class Cookie(pygame.sprite.Sprite):
         elif b.board[self.y][self.x][0] == self.lvl:
             b.board[start_y][start_x][0] = 0
             pygame.sprite.spritecollide(self, cookies_group, True)
-            Cookie(self.lvl + 1, (self.x, self.y), b.get_info())
+            Cookie(self.lvl + 1, (self.x, self.y))
         else:
             for c in pygame.sprite.spritecollide(self, cookies_group, False):
                 if c != self:
@@ -203,12 +204,13 @@ class ShopButton(pygame.sprite.Sprite):
         super().__init__(buttons_group, shop_buttons_group)
         self.lvl = lvl
         self.price = [0, 50, 750, 2500, 7500, 25000, 75000][self.lvl]
+        self.message = f'СНАЧАЛА ОТКРОЙ ПИРОГ {self.lvl + 4} УРОВНЯ'
         if self.lvl == 1:
             self.enabled = True
             self.image = load_image(f'shop_cell{str(self.lvl)}.png')
         else:
             self.enabled = False
-            self.image = load_image(f'locked_shop_cell.png')
+            self.image = load_image(f'locked_cell.png')
 
         self.rect = self.image.get_rect()
         self.rect.x = 215 + (self.lvl - 1) * 150
@@ -220,7 +222,7 @@ class ShopButton(pygame.sprite.Sprite):
             for row in range(len(b.board)):
                 for cell in range(len(b.board[row])):
                     if b.board[row][cell][0] == 0:
-                        Cookie(self.lvl, (cell, row), b.get_info())
+                        Cookie(self.lvl, (cell, row))
                         balance -= self.price
                         self.price = int(self.price * 1.1)
                         return
@@ -239,6 +241,55 @@ class ShopButton(pygame.sprite.Sprite):
                         create_particles((self.rect.x + 50, self.rect.y + 50))
 
 
+class BoostButton(pygame.sprite.Sprite):
+    def __init__(self, t):
+        super().__init__(buttons_group, boost_buttons_group)
+        self.type = t
+        if self.type == 1:
+            self.lvl = 1
+            self.price = [0, 1000, 7500, 25000, -1][self.lvl]
+        elif self.type == 2:
+            pass
+        elif self.type == 3:
+            pass
+        self.message = f'СНАЧАЛА ОТКРОЙ ПИРОГ {self.type + 3} УРОВНЯ'
+        self.enabled = False
+        self.image = load_image(f'locked_cell.png')
+
+        self.rect = self.image.get_rect()
+        self.rect.x = 1080
+        self.rect.y = 150 + (self.type - 1) * 150
+
+    def click(self):
+        global balance
+        if self.type == 1:
+            if self.price <= balance and self.lvl < 4:
+                if self.lvl % 2 != 0:
+                    b.expand(b.width + 1, b.height)
+                else:
+                    b.expand(b.width, b.height + 1)
+                balance -= self.price
+                self.lvl += 1
+                self.price = [0, 1000, 7500, 25000, -1][self.lvl]
+            elif self.lvl == 4:
+                print('ДОСТИГНУТ МАКСИМАЛЬНЫЙ УРОВЕНЬ ДОСКИ')
+            else:
+                print('НЕДОСТАТОЧНО СРЕДСТВ')
+        elif self.type == 2:
+            pass
+        elif self.type == 3:
+            pass
+
+    def update_enabled(self):
+        if not self.enabled:
+            for row in b.board:
+                for cell in row:
+                    if cell[0] == self.type + 3:
+                        self.enabled = True
+                        self.image = load_image(f'boost_cell{str(self.type)}.png')
+                        create_particles((self.rect.x + 50, self.rect.y + 50))
+
+
 class Particle(pygame.sprite.Sprite):
     fire = [load_image("star.png")]
     for scale in (15, 20, 25):
@@ -246,7 +297,7 @@ class Particle(pygame.sprite.Sprite):
 
     def __init__(self, pos, dx, dy):
         super().__init__(particle_group)
-        self.image = random.choice(self.fire)
+        self.image = choice(self.fire)
         self.rect = self.image.get_rect()
 
         self.velocity = [dx, dy]
@@ -278,6 +329,7 @@ if __name__ == '__main__':
     cookies_group = pygame.sprite.Group()
     buttons_group = pygame.sprite.Group()
     shop_buttons_group = pygame.sprite.Group()
+    boost_buttons_group = pygame.sprite.Group()
     particle_group = pygame.sprite.Group()
 
     cur = Cursor()
@@ -302,13 +354,12 @@ if __name__ == '__main__':
                     collided_cookies = pygame.sprite.spritecollide(cur, cookies_group, False)
                     moving = True
                 elif pygame.sprite.spritecollideany(cur, buttons_group):
-                    collided_buttons = pygame.sprite.spritecollide(cur, shop_buttons_group, False)
+                    collided_buttons = pygame.sprite.spritecollide(cur, buttons_group, False)
                     for btn in collided_buttons:
                         if btn.enabled:
                             btn.click()
                         else:
-                            print(f'СНАЧАЛА ОТКРОЙ ПИРОГ {btn.lvl + 4} УРОВНЯ')  # Это тоже будет
-                            # выводиться на экран
+                            print(btn.message)  # Это тоже будет выводиться на экран
             elif event.type == pygame.MOUSEBUTTONUP:
                 if moving:
                     for cookie in collided_cookies:
@@ -321,25 +372,33 @@ if __name__ == '__main__':
                         cookie.update(dx, dy)
                     x0, y0 = event.pos
             cur.update(event)
-        for btn in shop_buttons_group:
+        for btn in buttons_group:
             btn.update_enabled()
         particle_group.update()
         cells_group.draw(screen)
         panels_group.draw(screen)
-        shop_buttons_group.draw(screen)
+        buttons_group.draw(screen)
         price_panels_group.draw(screen)
 
-        price_text = [f'{sh_b.price}$' for sh_b in shop_buttons_group]
+        cookies_price = [f'{sh_b.price}$' for sh_b in shop_buttons_group]
+        boost1 = [boost for boost in boost_buttons_group if boost.type == 1][0]
+        boost1_price = ['0$', '1000$', '7500$', '25000$', 'макс. ур.'][boost1.lvl]
         font = pygame.font.SysFont('segoe script', 16)  # Шрифт не конечный
         text_coord = 215
-        for line in price_text:
+        for line in cookies_price:
             string_rendered = font.render(line, True, 'black')
             intro_rect = string_rendered.get_rect()
-            intro_rect.y = 686  # Зависит от шрифта
+            intro_rect.y = 685  # Зависит от шрифта
             text_coord += (50 - intro_rect.width / 2)
             intro_rect.x = text_coord
             screen.blit(string_rendered, intro_rect)
             text_coord += 100 + intro_rect.width / 2
+
+        string_rendered = font.render(boost1_price, True, 'black')
+        intro_rect = string_rendered.get_rect()
+        intro_rect.x = 1080 + (50 - intro_rect.width / 2)
+        intro_rect.y = 240
+        screen.blit(string_rendered, intro_rect)
 
         balance_text = [f'{balance}$', f'{sum([c.income for c in cookies_group])}$/c']
         font_size = 30
