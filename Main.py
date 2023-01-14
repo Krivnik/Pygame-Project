@@ -1,5 +1,4 @@
 import pygame
-import sys
 from math import ceil
 from random import choice
 from image_loading import load_image
@@ -7,35 +6,25 @@ from start_screen import start_screen
 
 
 def render_environment():
-    cookies_info = Panel('Vl')
-    cookies_info.rect.x = 25
-    cookies_info.rect.y = 75
+    for y in range(b.height):
+        for x in range(b.width):
+            Cell(x, y)
 
-    boosts = Panel('Vr')
-    boosts.rect.x = 1055
-    boosts.rect.y = 125
-
-    shop = Panel('H')
-    shop.rect.x = 190
-    shop.rect.y = 570
-
-    b_panel = Panel('B')
-    b_panel.rect.x = 1105
-    b_panel.rect.y = 25
+    Panel('Vl', 25, 75)
+    Panel('Vr', 1055, 125)
+    Panel('H', 190, 570)
+    Panel('B', 1105, 25)
 
     for lvl in range(1, 7):
         ShopButton(lvl)
     for i in range(6):
-        price = Panel('P')
-        price.rect.x = 215 + i * 150
-        price.rect.y = 685
+        Panel('P', 215 + i * 150, 685)
 
-    for _ in range(1, 4):
-        BoostButton(_)
-    for i in range(0, 3, 2):
-        price = Panel('P')
-        price.rect.x = 1080
-        price.rect.y = 240 + i * 150
+    for t in range(1, 4):
+        BoostButton(t)
+    for i in range(2):
+        Panel('P', 1080, 240 + i * 300)
+
     Cookie(1, (1, 1))
 
 
@@ -43,58 +32,42 @@ def create_particles(position):
     particle_count = 30
     numbers = range(-5, 5)
     for _ in range(particle_count):
-        Particle(position, choice(numbers), choice(numbers))
-
-
-balance = 25000
+        Particle(position, [choice(numbers), choice(numbers)])
 
 
 class Board:
     def __init__(self, width_in_cells, height_in_cells):
         self.width = width_in_cells
         self.height = height_in_cells
-        self.board = [[[0, 1] for _ in range(self.width)] for _ in range(self.height)]
         self.cell_size = 100
+        self.board = [[[0, 1] for _ in range(self.width)] for _ in range(self.height)]
         self.left = width // 2 - self.cell_size * self.width // 2
         self.top = height // 2 - self.cell_size * self.height // 2
-
-        for h in range(self.height):
-            for w in range(self.width):
-                c = Cell(w, h)
-                c.rect.x = self.left + w * self.cell_size
-                c.rect.y = self.top + h * self.cell_size
 
     def expand(self, width_in_cells, height_in_cells):
         if width_in_cells > self.width or height_in_cells > self.height:
             start_width, start_height = self.width, self.height
-            self.width = width_in_cells
-            self.height = height_in_cells
+            self.width, self.height = width_in_cells, height_in_cells
             self.left = width // 2 - self.cell_size * self.width // 2
             self.top = height // 2 - self.cell_size * self.height // 2
+
             for row in self.board:
-                for _ in range(self.width - start_width):
+                for cell in range(self.width - start_width):
                     row += [[0, 1]]
             for row in range(self.height - start_height):
                 self.board += [[[0, 1] for _ in range(self.width)]]
 
             for cell in cells_group:
                 cell.kill()
-
-            for h in range(self.height):
-                for w in range(self.width):
-                    c = Cell(w, h)
-                    c.rect.x = self.left + w * self.cell_size
-                    c.rect.y = self.top + h * self.cell_size
+            for y in range(self.height):
+                for x in range(self.width):
+                    Cell(x, y)
 
             for c in cookies_group:
-                c.width, c.height, c.top, c.left, c.cell_size = b.get_info()
-                c.rect.x = 13 + c.left + c.x * c.cell_size
-                c.rect.y = 13 + c.top + c.y * c.cell_size
+                c.rect.x = 13 + b.left + c.x * b.cell_size
+                c.rect.y = 13 + b.top + c.y * b.cell_size
         else:
             print('ПОЛЕ ДОЛЖНО РАСШИРЯТЬСЯ')
-
-    def get_info(self):
-        return self.width, self.height, self.top, self.left, self.cell_size
 
 
 class Cell(pygame.sprite.Sprite):
@@ -103,10 +76,12 @@ class Cell(pygame.sprite.Sprite):
         self.x, self.y = pos_x, pos_y
         self.image = load_image('cell.png')
         self.rect = self.image.get_rect()
+        self.rect.x = b.left + pos_x * b.cell_size
+        self.rect.y = b.top + pos_y * b.cell_size
 
 
 class Panel(pygame.sprite.Sprite):
-    def __init__(self, t):
+    def __init__(self, t, x, y):
         super().__init__()
         if t == 'Vr':
             self.image = load_image('vertical right panel.png', -1)
@@ -124,6 +99,7 @@ class Panel(pygame.sprite.Sprite):
             self.image = load_image('price panel.png', -1)
             self.add(price_panels_group)
         self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = x, y
 
 
 class Cursor(pygame.sprite.Sprite):
@@ -134,10 +110,9 @@ class Cursor(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = pygame.mouse.get_pos()
         self.visible = True
 
-    def update(self, *args):
-        if args and args[0].type == pygame.MOUSEMOTION and pygame.mouse.get_focused():
-            self.rect.x, self.rect.y = args[0].pos[0], args[0].pos[1]
+    def move(self, pos):
         if pygame.mouse.get_focused():
+            self.rect.x, self.rect.y = pos[0], pos[1]
             self.visible = True
         else:
             self.visible = False
@@ -146,20 +121,18 @@ class Cursor(pygame.sprite.Sprite):
 class Cookie(pygame.sprite.Sprite):
     def __init__(self, lvl, pos):
         super().__init__(cookies_group)
-        self.width, self.height, self.top, self.left, self.cell_size = b.get_info()
         self.lvl = lvl
-        self.income = int([0, 1, 2, 4, 9, 19, 40, 85, 178, 375, 790][self.lvl]
-                          * b.board[pos[1]][pos[0]][1])
-        self.image = load_image(f'lvl{str(lvl)}_sprite.png')
-        self.mask = pygame.mask.from_surface(self.image)
         b.board[pos[1]][pos[0]][0] = lvl
-
         self.x, self.y = pos[0], pos[1]
-        self.rect = self.image.get_rect()
-        self.rect.x = 13 + self.left + self.x * self.cell_size
-        self.rect.y = 13 + self.top + self.y * self.cell_size
+        self.income = int([0, 1, 2, 5, 12, 30, 70, 150, 320, 700, 1500][self.lvl]
+                          * b.board[pos[1]][pos[0]][1])
 
-    def update(self, x, y):
+        self.image = load_image(f'lvl{str(lvl)}_sprite.png')
+        self.rect = self.image.get_rect()
+        self.rect.x = 13 + b.left + self.x * b.cell_size
+        self.rect.y = 13 + b.top + self.y * b.cell_size
+
+    def move(self, x, y):
         self.rect.x += x
         self.rect.y += y
 
@@ -178,8 +151,8 @@ class Cookie(pygame.sprite.Sprite):
 
         start_x, start_y = self.x, self.y
         self.x, self.y = target_cell_pos[0], target_cell_pos[1]
-        self.rect.x = 13 + self.left + self.x * self.cell_size
-        self.rect.y = 13 + self.top + self.y * self.cell_size
+        self.rect.x = 13 + b.left + self.x * b.cell_size
+        self.rect.y = 13 + b.top + self.y * b.cell_size
         if (self.x, self.y) == (start_x, start_y):
             pass
         elif b.board[self.y][self.x][0] == 0:
@@ -193,8 +166,8 @@ class Cookie(pygame.sprite.Sprite):
             for c in pygame.sprite.spritecollide(self, cookies_group, False):
                 if c != self:
                     c.x, c.y = start_x, start_y
-                    c.rect.x = 13 + c.left + c.x * c.cell_size
-                    c.rect.y = 13 + c.top + c.y * c.cell_size
+                    c.rect.x = 13 + b.left + c.x * b.cell_size
+                    c.rect.y = 13 + b.top + c.y * b.cell_size
             b.board[self.y][self.x][0], b.board[start_y][start_x][0] = \
                 b.board[start_y][start_x][0], b.board[self.y][self.x][0]
 
@@ -231,7 +204,7 @@ class ShopButton(pygame.sprite.Sprite):
         else:
             print('НЕДОСТАТОЧНО СРЕДСТВ')
 
-    def update_enabled(self):
+    def update(self):
         if not self.enabled:
             for row in b.board:
                 for cell in row:
@@ -261,7 +234,7 @@ class BoostButton(pygame.sprite.Sprite):
         self.rect.y = 150 + (self.type - 1) * 150
 
     def click(self):
-        global balance, x3boost_counter
+        global balance, x3boost_counter, cookies_visible, upgrade_buttons_visible
         if self.type == 1:
             if self.price <= balance and self.lvl < 4:
                 if self.lvl % 2 != 0:
@@ -275,18 +248,21 @@ class BoostButton(pygame.sprite.Sprite):
                 print('ДОСТИГНУТ МАКСИМАЛЬНЫЙ УРОВЕНЬ ДОСКИ')
             else:
                 print('НЕДОСТАТОЧНО СРЕДСТВ')
+
         elif self.type == 2:
-            pass
+            cookies_visible = not cookies_visible
+            upgrade_buttons_visible = not upgrade_buttons_visible
+
         elif self.type == 3:
             if self.price <= balance and x3boost_counter % 300 == 0:
                 x3boost_counter += 1
                 balance -= self.price
-            elif x3boost_counter % 18000 != 0:
+            elif x3boost_counter % 300 != 0:
                 print('БУСТ УЖЕ ДЕЙСТВУЕТ')
             else:
                 print('НЕДОСТАТОЧНО СРЕДСТВ')
 
-    def update_enabled(self):
+    def update(self):
         if not self.enabled:
             for row in b.board:
                 for cell in row:
@@ -294,10 +270,17 @@ class BoostButton(pygame.sprite.Sprite):
                         self.enabled = True
                         self.image = load_image(f'boost_cell{str(self.type)}.png')
                         create_particles((self.rect.x + 50, self.rect.y + 50))
-
+        if self.type == 2 and self.enabled:
+            if cookies_visible:
+                self.image = load_image(f'boost_cell{str(self.type)}.png')
+            else:
+                self.image = load_image(f'cross_cell.png')
         if self.type == 3:
-            self.price = int(sum([sh_b.price for sh_b in shop_buttons_group]) / 6 / 10)  # Я не знаю,
-            # куда еще можно закинуть это обновление цены
+            self.price = int(sum([sh_b.price for sh_b in shop_buttons_group]) / 6 / 10)
+
+
+class UpgradeButton(pygame.sprite.Sprite):
+    pass
 
 
 class Particle(pygame.sprite.Sprite):
@@ -305,15 +288,15 @@ class Particle(pygame.sprite.Sprite):
     for scale in (15, 20, 25):
         fire.append(pygame.transform.scale(fire[0], (scale, scale)))
 
-    def __init__(self, pos, dx, dy):
+    def __init__(self, pos, delta):
         super().__init__(particle_group)
         self.image = choice(self.fire)
         self.rect = self.image.get_rect()
 
-        self.velocity = [dx, dy]
+        self.velocity = delta
         self.rect.x, self.rect.y = pos
 
-        self.gravity = 0.09
+        self.gravity = 0.1
 
     def update(self):
         self.velocity[1] += self.gravity
@@ -347,11 +330,17 @@ if __name__ == '__main__':
     start_screen()
 
     b = Board(3, 3)
-    board_info = b.get_info()
     render_environment()
+
+    balance = 24999
+
+    cookies_visible = True
+    upgrade_buttons_visible = False
+    collided_cookie = None
 
     counter = 0
     x3boost_counter = 0
+
     running = True
     moving = False
     while running:
@@ -361,37 +350,40 @@ if __name__ == '__main__':
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 x0, y0 = event.pos
-                if pygame.sprite.spritecollideany(cur, cookies_group):
-                    collided_cookies = pygame.sprite.spritecollide(cur, cookies_group, False)
+                if pygame.sprite.spritecollideany(cur, cookies_group) and cookies_visible:
+                    collided_cookie = pygame.sprite.spritecollide(cur, cookies_group, False)[0]
                     moving = True
                 elif pygame.sprite.spritecollideany(cur, buttons_group):
-                    collided_buttons = pygame.sprite.spritecollide(cur, buttons_group, False)
-                    for btn in collided_buttons:
-                        if btn.enabled:
-                            btn.click()
+                    collided_button = pygame.sprite.spritecollide(cur, buttons_group, False)[0]
+                    if cookies_visible or \
+                            (not cookies_visible and
+                             collided_button in boost_buttons_group and
+                             collided_button.type == 2):
+                        if collided_button.enabled:
+                            collided_button.click()
                         else:
-                            print(btn.message)
+                            print(collided_button.message)
+                    else:
+                        print('ВЫ НАХОДИТЕСЬ В РЕЖИМЕ УЛУЧШЕНИЯ ТАРЕЛОК')
             elif event.type == pygame.MOUSEBUTTONUP:
                 if moving:
-                    for cookie in collided_cookies:
-                        cookie.go_to_nearest_cell()
-                        moving = False
+                    collided_cookie.go_to_nearest_cell()
+                    collided_cookie = None
+                    moving = False
             if event.type == pygame.MOUSEMOTION:
+                cur.move(event.pos)
                 if moving:
                     dx, dy = event.pos[0] - x0, event.pos[1] - y0
-                    for cookie in collided_cookies:
-                        cookie.update(dx, dy)
+                    collided_cookie.move(dx, dy)
                     x0, y0 = event.pos
-            cur.update(event)
-        for btn in buttons_group:
-            btn.update_enabled()
+        buttons_group.update()
         particle_group.update()
         cells_group.draw(screen)
         panels_group.draw(screen)
         buttons_group.draw(screen)
         price_panels_group.draw(screen)
 
-        font = pygame.font.SysFont('segoe script', 16)
+        font = pygame.font.SysFont('comic sans', 16, True)
 
         cookies_price = [f'{sh_b.price}$' for sh_b in shop_buttons_group]
         text_coord1 = 215
@@ -425,27 +417,57 @@ if __name__ == '__main__':
         for line in balance_text:
             font_size -= 5
             text_coord += 30
-            font = pygame.font.SysFont('segoe script', font_size)
+            font = pygame.font.SysFont('comic sans', font_size, True)
             string_rendered = font.render(line, True, 'black')
             intro_rect = string_rendered.get_rect()
             intro_rect.y = text_coord
             intro_rect.x = 1105 + (75 - intro_rect.width / 2)
             screen.blit(string_rendered, intro_rect)
 
-        cookies_group.draw(screen)
+        if cookies_visible:
+            if collided_cookie:
+                pygame.sprite.Group([c for c in cookies_group if c != collided_cookie]).draw(screen)
+                pygame.sprite.Group(collided_cookie).draw(screen)
+            else:
+                cookies_group.draw(screen)
         particle_group.draw(screen)
         if cur.visible:
             cur_group.draw(screen)
         pygame.display.flip()
-        if counter % 54 == 0:  # я не знаю почему, но у меня значение такое
+        if counter % 120 == 0:
             if x3boost_counter % 300 != 0:
                 balance += 3 * sum([c.income for c in cookies_group])
                 x3boost_counter += 1
                 print(x3boost_counter)
-            elif x3boost_counter % 300 == 0:
-                pass
             else:
                 balance += sum([c.income for c in cookies_group])
         counter += 1
-        pygame.time.Clock().tick(120)
     pygame.quit()
+
+# Записки сумашедшего:
+
+# Оптимизировать перемещение печенья и его размещение на поле после перетаскивания
+
+# Найти в библиотеке пайгейма адекватный таймер и переделать х3 буст под него
+
+# Доделать улучшение тарелок, либо забить и сделать его по типу расширения поля,
+# где коэффициент увеличения прибыли для всех тарелок будет общий
+
+# Добавить что-то анимированное (скорее всего на стартовом экране)
+
+# Сделать финальное окно при соединении 2 печенек 10 уровня, на котором будет написано:
+# суммарное кол-во соединений
+# общее кол-во заработанных денег
+# общее кол-во купленных печенек
+
+# Создать requirements.txt
+
+# Записать в какой-нибудь txt-файл какую-нибудь инфу
+
+# Если будет не лень, добавить музон
+
+# Запихать все это в exe-шник
+
+# Сделать презентацию и пояснительную записку
+
+# Для 1 дня выглядит многовато :'(
