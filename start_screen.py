@@ -32,7 +32,7 @@ def start_screen():
             self.image = self.frames[self.cur_frame]
 
     cake = Cake(load_image('cake.png'), 2, 2, 750, 518)
-    cake.rect.x, cake.rect.y = 500, 100
+    cake.rect.x, cake.rect.y = 550, 100
 
     while True:
         screen.fill('#B97B56')
@@ -49,20 +49,20 @@ def start_screen():
         intro_text = ["MERGE CAKES",
                       "",
                       "Покупайте пироги и",
-                      "соединяйте одинаковые",
-                      "между собой",
+                      "соединяйте одинаковые между собой",
+                      "для увеличения прибыли",
                       "",
-                      "Используйте разные бусты",
-                      "для увеличения прогресса"]
+                      "Используйте разнообразные бусты",
+                      "для ускорения прогресса"]
 
-        font = pygame.font.SysFont('segoe script', 30)
-        text_coord = 50
+        font = pygame.font.SysFont('comic sans', 30)
+        text_coord = 15
         for line in intro_text:
             string_rendered = font.render(line, True, 'black')
             intro_rect = string_rendered.get_rect()
             text_coord += 15
             intro_rect.top = text_coord
-            intro_rect.x = 15
+            intro_rect.x = 30
             text_coord += intro_rect.height
             screen.blit(string_rendered, intro_rect)
 

@@ -12,10 +12,9 @@ def render_environment():
         for x in range(b.width):
             Cell(x, y)
 
-    Panel('Vl', 25, 75)
-    Panel('Vr', 1055, 125)
+    Panel('V', 50, 125)
     Panel('H', 190, 570)
-    Panel('B', 1105, 25)
+    Panel('B', 1080, 50)
 
     for lvl in range(1, 7):
         ShopButton(lvl)
@@ -25,7 +24,7 @@ def render_environment():
     for t in range(1, 4):
         BoostButton(t)
     for i in range(2):
-        Panel('P', 1080, 240 + i * 300)
+        Panel('P', 75, 240 + i * 300)
 
     Cookie(1, (1, 1))
 
@@ -85,11 +84,8 @@ class Cell(pygame.sprite.Sprite):
 class Panel(pygame.sprite.Sprite):
     def __init__(self, t, x, y):
         super().__init__()
-        if t == 'Vr':
-            self.image = load_image('vertical right panel.png', -1)
-            self.add(panels_group)
-        elif t == 'Vl':
-            self.image = load_image('vertical left panel.png', -1)
+        if t == 'V':
+            self.image = load_image('vertical panel.png', -1)
             self.add(panels_group)
         elif t == 'H':
             self.image = load_image('horizontal panel.png', -1)
@@ -230,13 +226,13 @@ class BoostButton(pygame.sprite.Sprite):
         elif self.type == 2:
             pass
         elif self.type == 3:
-            self.price = int(sum([sh_b.price for sh_b in shop_buttons_group]) / 6 / 10)
+            self.price = int(sum([c.income for c in cookies_group]) * 150)
         self.message = f'СНАЧАЛА ОТКРОЙ ПИРОГ {self.type + 3} УРОВНЯ'
         self.enabled = False
         self.image = load_image(f'locked_cell.png')
 
         self.rect = self.image.get_rect()
-        self.rect.x = 1080
+        self.rect.x = 75
         self.rect.y = 150 + (self.type - 1) * 150
 
     def click(self):
@@ -282,7 +278,7 @@ class BoostButton(pygame.sprite.Sprite):
             else:
                 self.image = load_image(f'cross_cell.png')
         if self.type == 3:
-            self.price = int(sum([sh_b.price for sh_b in shop_buttons_group]) / 6 / 10)
+            self.price = int(sum([c.income for c in cookies_group]) * 150)
 
 
 class UpgradeButton(pygame.sprite.Sprite):
@@ -416,7 +412,7 @@ if __name__ == '__main__':
         buttons_group.draw(screen)
         price_panels_group.draw(screen)
 
-        font = pygame.font.SysFont('comic sans', 16, True)
+        font = pygame.font.SysFont('comic sans', 16)
 
         cookies_price = [f'{sh_b.price}$' for sh_b in shop_buttons_group]
         text_coord1 = 215
@@ -437,7 +433,7 @@ if __name__ == '__main__':
         for prc in [boost1_price, boost3_price]:
             string_rendered = font.render(prc, True, 'black')
             intro_rect = string_rendered.get_rect()
-            intro_rect.x = 1080 + (50 - intro_rect.width / 2)
+            intro_rect.x = 75 + (50 - intro_rect.width / 2)
             text_coord2 += 300
             intro_rect.y = text_coord2
             screen.blit(string_rendered, intro_rect)
@@ -446,15 +442,15 @@ if __name__ == '__main__':
         if x3boost_counter % 301 != 0:
             balance_text[1] = f'{3 * sum([c.income for c in cookies_group])}$/c'
         font_size = 30
-        text_coord = 0
+        text_coord = 25
         for line in balance_text:
             font_size -= 5
             text_coord += 30
-            font = pygame.font.SysFont('comic sans', font_size, True)
+            font = pygame.font.SysFont('comic sans', font_size)
             string_rendered = font.render(line, True, 'black')
             intro_rect = string_rendered.get_rect()
             intro_rect.y = text_coord
-            intro_rect.x = 1105 + (75 - intro_rect.width / 2)
+            intro_rect.x = 1080 + (75 - intro_rect.width / 2)
             screen.blit(string_rendered, intro_rect)
 
         if cookies_visible:
@@ -467,7 +463,7 @@ if __name__ == '__main__':
         if cur.visible:
             cur_group.draw(screen)
         pygame.display.flip()
-        clock.tick(120)
+        clock.tick(90)
     end_screen(total_time, total_money, total_merges, total_purchases)
     pygame.quit()
 
