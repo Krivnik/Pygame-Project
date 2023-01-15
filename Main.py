@@ -325,6 +325,9 @@ if __name__ == '__main__':
     boost_buttons_group = pygame.sprite.Group()
     particle_group = pygame.sprite.Group()
 
+    pygame.mixer.music.load("data/music.mp3")
+    pygame.mixer.music.play(-1)
+
     cur = Cursor()
 
     start_screen()
@@ -343,6 +346,7 @@ if __name__ == '__main__':
 
     running = True
     moving = False
+    flPause = False
     while running:
         screen.blit(fon, (0, 0))
         for event in pygame.event.get():
@@ -370,6 +374,13 @@ if __name__ == '__main__':
                     collided_cookie.go_to_nearest_cell()
                     collided_cookie = None
                     moving = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    flPause = not flPause
+                    if flPause:
+                        pygame.mixer.music.pause()
+                    else:
+                        pygame.mixer.music.unpause()
             if event.type == pygame.MOUSEMOTION:
                 cur.move(event.pos)
                 if moving:
