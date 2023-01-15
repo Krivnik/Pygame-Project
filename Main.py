@@ -321,6 +321,9 @@ if __name__ == '__main__':
     boost_buttons_group = pygame.sprite.Group()
     particle_group = pygame.sprite.Group()
 
+    pygame.mixer.music.load("data/music.mp3")
+    pygame.mixer.music.play(-1)
+
     start_screen()
 
     cur = Cursor()
@@ -339,6 +342,8 @@ if __name__ == '__main__':
 
     total_time = 0
     x3boost_counter = 0
+
+    flPause = False
 
     running = True
     moving = False
@@ -381,6 +386,13 @@ if __name__ == '__main__':
                     collided_cookie.go_to_nearest_cell()
                     collided_cookie = None
                     moving = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    flPause = not flPause
+                    if flPause:
+                        pygame.mixer.music.pause()
+                    else:
+                        pygame.mixer.music.unpause()
 
         buttons_group.update()
         particle_group.update()
@@ -458,8 +470,6 @@ if __name__ == '__main__':
 # Создать requirements.txt
 
 # Записать в какой-нибудь txt-файл какую-нибудь инфу
-
-# Если будет не лень, добавить музон
 
 # Запихать все это в exe-шник
 
