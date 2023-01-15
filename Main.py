@@ -133,16 +133,12 @@ class Cookie(pygame.sprite.Sprite):
         self.rect.y = 13 + b.top + self.y * b.cell_size
 
     def move(self, x, y):
-        self.rect.x += x
-        self.rect.y += y
+        self.rect.x, self.rect.y = x, y
 
     def go_to_nearest_cell(self):
         self_c = self.rect.center
-        ranges = []
-
-        for cell in cells_group:
-            cell_c = cell.rect.center
-            ranges.append(((self_c[0] - cell_c[0]) ** 2 + (self_c[1] - cell_c[1]) ** 2) ** 0.5)
+        ranges = [((self_c[0] - c.rect.center[0]) ** 2 + (self_c[1] - c.rect.center[1]) ** 2) ** 0.5
+                  for c in cells_group]
 
         target_cell_pos = [(ranges.index(min(ranges)) + 1) % b.width - 1,
                            ceil((ranges.index(min(ranges)) + 1) / b.width) - 1]
@@ -163,11 +159,11 @@ class Cookie(pygame.sprite.Sprite):
             pygame.sprite.spritecollide(self, cookies_group, True)
             Cookie(self.lvl + 1, (self.x, self.y))
         else:
-            for c in pygame.sprite.spritecollide(self, cookies_group, False):
-                if c != self:
-                    c.x, c.y = start_x, start_y
-                    c.rect.x = 13 + b.left + c.x * b.cell_size
-                    c.rect.y = 13 + b.top + c.y * b.cell_size
+            another_cookie = [c for c in pygame.sprite.spritecollide(self, cookies_group, False)
+                              if c != self][0]
+            another_cookie.x, another_cookie.y = start_x, start_y
+            another_cookie.rect.x = 13 + b.left + another_cookie.x * b.cell_size
+            another_cookie.rect.y = 13 + b.top + another_cookie.y * b.cell_size
             b.board[self.y][self.x][0], b.board[start_y][start_x][0] = \
                 b.board[start_y][start_x][0], b.board[self.y][self.x][0]
 
@@ -254,10 +250,10 @@ class BoostButton(pygame.sprite.Sprite):
             upgrade_buttons_visible = not upgrade_buttons_visible
 
         elif self.type == 3:
-            if self.price <= balance and x3boost_counter % 300 == 0:
+            if self.price <= balance and x3boost_counter % 301 == 0:
                 x3boost_counter += 1
                 balance -= self.price
-            elif x3boost_counter % 300 != 0:
+            elif x3boost_counter % 301 != 0:
                 print('БУСТ УЖЕ ДЕЙСТВУЕТ')
             else:
                 print('НЕДОСТАТОЧНО СРЕДСТВ')
@@ -325,20 +321,23 @@ if __name__ == '__main__':
     boost_buttons_group = pygame.sprite.Group()
     particle_group = pygame.sprite.Group()
 
-    cur = Cursor()
-
     start_screen()
+
+    cur = Cursor()
 
     b = Board(3, 3)
     render_environment()
 
-    balance = 24999
+    balance = 25000
 
     cookies_visible = True
     upgrade_buttons_visible = False
     collided_cookie = None
 
-    counter = 0
+    clock = pygame.time.Clock()
+    pygame.time.set_timer(pygame.USEREVENT, 1000)
+
+    total_time = 0
     x3boost_counter = 0
 
     running = True
@@ -348,10 +347,18 @@ if __name__ == '__main__':
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                x0, y0 = event.pos
+            if event.type == pygame.USEREVENT:
+                if x3boost_counter % 301 != 0:
+                    balance += 3 * sum([c.income for c in cookies_group])
+                    x3boost_counter += 1
+                else:
+                    balance += sum([c.income for c in cookies_group])
+                total_time += 1
+            if event.type == pygame.MOUSEBUTTONDOWN:
                 if pygame.sprite.spritecollideany(cur, cookies_group) and cookies_visible:
                     collided_cookie = pygame.sprite.spritecollide(cur, cookies_group, False)[0]
+                    dx = collided_cookie.rect.x - event.pos[0]
+                    dy = collided_cookie.rect.y - event.pos[1]
                     moving = True
                 elif pygame.sprite.spritecollideany(cur, buttons_group):
                     collided_button = pygame.sprite.spritecollide(cur, buttons_group, False)[0]
@@ -365,17 +372,16 @@ if __name__ == '__main__':
                             print(collided_button.message)
                     else:
                         print('ВЫ НАХОДИТЕСЬ В РЕЖИМЕ УЛУЧШЕНИЯ ТАРЕЛОК')
-            elif event.type == pygame.MOUSEBUTTONUP:
+            if event.type == pygame.MOUSEMOTION:
+                cur.move(event.pos)
+                if moving:
+                    collided_cookie.move(event.pos[0] + dx, event.pos[1] + dy)
+            if event.type == pygame.MOUSEBUTTONUP:
                 if moving:
                     collided_cookie.go_to_nearest_cell()
                     collided_cookie = None
                     moving = False
-            if event.type == pygame.MOUSEMOTION:
-                cur.move(event.pos)
-                if moving:
-                    dx, dy = event.pos[0] - x0, event.pos[1] - y0
-                    collided_cookie.move(dx, dy)
-                    x0, y0 = event.pos
+
         buttons_group.update()
         particle_group.update()
         cells_group.draw(screen)
@@ -410,7 +416,7 @@ if __name__ == '__main__':
             screen.blit(string_rendered, intro_rect)
 
         balance_text = [f'{balance}$', f'{sum([c.income for c in cookies_group])}$/c']
-        if x3boost_counter % 300 != 0:
+        if x3boost_counter % 301 != 0:
             balance_text[1] = f'{3 * sum([c.income for c in cookies_group])}$/c'
         font_size = 30
         text_coord = 0
@@ -434,21 +440,10 @@ if __name__ == '__main__':
         if cur.visible:
             cur_group.draw(screen)
         pygame.display.flip()
-        if counter % 120 == 0:
-            if x3boost_counter % 300 != 0:
-                balance += 3 * sum([c.income for c in cookies_group])
-                x3boost_counter += 1
-                print(x3boost_counter)
-            else:
-                balance += sum([c.income for c in cookies_group])
-        counter += 1
+        clock.tick(120)
     pygame.quit()
 
 # Записки сумашедшего:
-
-# Оптимизировать перемещение печенья и его размещение на поле после перетаскивания
-
-# Найти в библиотеке пайгейма адекватный таймер и переделать х3 буст под него
 
 # Доделать улучшение тарелок, либо забить и сделать его по типу расширения поля,
 # где коэффициент увеличения прибыли для всех тарелок будет общий
