@@ -1,8 +1,10 @@
 import pygame
+from sys import exit
 from math import ceil
 from random import choice
 from image_loading import load_image
 from start_screen import start_screen
+from end_screen import end_screen
 
 
 def render_environment():
@@ -136,6 +138,7 @@ class Cookie(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = x, y
 
     def go_to_nearest_cell(self):
+        global total_merges
         self_c = self.rect.center
         ranges = [((self_c[0] - c.rect.center[0]) ** 2 + (self_c[1] - c.rect.center[1]) ** 2) ** 0.5
                   for c in cells_group]
@@ -155,9 +158,15 @@ class Cookie(pygame.sprite.Sprite):
             b.board[start_y][start_x][0] = 0
             b.board[self.y][self.x][0] = self.lvl
         elif b.board[self.y][self.x][0] == self.lvl:
-            b.board[start_y][start_x][0] = 0
-            pygame.sprite.spritecollide(self, cookies_group, True)
-            Cookie(self.lvl + 1, (self.x, self.y))
+            if self.lvl != 10:
+                b.board[start_y][start_x][0] = 0
+                pygame.sprite.spritecollide(self, cookies_group, True)
+                Cookie(self.lvl + 1, (self.x, self.y))
+                total_merges += 1
+            else:
+                end_screen(total_time, total_money, total_merges, total_purchases)
+                pygame.quit()
+                exit()
         else:
             another_cookie = [c for c in pygame.sprite.spritecollide(self, cookies_group, False)
                               if c != self][0]
@@ -186,13 +195,14 @@ class ShopButton(pygame.sprite.Sprite):
         self.rect.y = 595
 
     def click(self):
-        global balance
+        global balance, total_purchases
         if self.price <= balance:
             for row in range(len(b.board)):
                 for cell in range(len(b.board[row])):
                     if b.board[row][cell][0] == 0:
                         Cookie(self.lvl, (cell, row))
                         balance -= self.price
+                        total_purchases += 1
                         self.price = int(self.price * 1.1)
                         return
                     if row == len(b.board) - 1 and cell == len(b.board[row]) - 1:
@@ -339,9 +349,12 @@ if __name__ == '__main__':
 
     clock = pygame.time.Clock()
     pygame.time.set_timer(pygame.USEREVENT, 1000)
+    x3boost_counter = 0
 
     total_time = 0
-    x3boost_counter = 0
+    total_merges = 0
+    total_money = 0
+    total_purchases = 0
 
     flPause = False
 
@@ -355,9 +368,11 @@ if __name__ == '__main__':
             if event.type == pygame.USEREVENT:
                 if x3boost_counter % 301 != 0:
                     balance += 3 * sum([c.income for c in cookies_group])
+                    total_money += 3 * sum([c.income for c in cookies_group])
                     x3boost_counter += 1
                 else:
                     balance += sum([c.income for c in cookies_group])
+                    total_money += sum([c.income for c in cookies_group])
                 total_time += 1
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if pygame.sprite.spritecollideany(cur, cookies_group) and cookies_visible:
@@ -453,19 +468,13 @@ if __name__ == '__main__':
             cur_group.draw(screen)
         pygame.display.flip()
         clock.tick(120)
+    end_screen(total_time, total_money, total_merges, total_purchases)
     pygame.quit()
 
 # Записки сумашедшего:
 
 # Доделать улучшение тарелок, либо забить и сделать его по типу расширения поля,
 # где коэффициент увеличения прибыли для всех тарелок будет общий
-
-# Добавить что-то анимированное (скорее всего на стартовом экране)
-
-# Сделать финальное окно при соединении 2 печенек 10 уровня, на котором будет написано:
-# суммарное кол-во соединений
-# общее кол-во заработанных денег
-# общее кол-во купленных печенек
 
 # Создать requirements.txt
 
