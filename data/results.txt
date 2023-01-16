@@ -1,0 +1,5 @@
+total time: 93
+total money: 285563
+total purchases: 48
+total merges: 48
+-----------------------------

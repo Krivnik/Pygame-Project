@@ -5,6 +5,7 @@ from image_loading import load_image
 pygame.init()
 size = width, height = 1280, 720
 screen = pygame.display.set_mode(size)
+pygame.display.set_icon(load_image('icon.ico'))
 
 
 def start_screen(flp):

@@ -6,6 +6,7 @@ from image_loading import load_image
 pygame.init()
 size = width, height = 1280, 720
 screen = pygame.display.set_mode(size)
+pygame.display.set_icon(load_image('icon.ico'))
 
 
 def end_screen(flp, total_time, total_money, total_merges, total_purchases, way):

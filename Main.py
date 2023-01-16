@@ -28,6 +28,8 @@ def render_environment():
         Panel('P', 75, 250 + i * 300)
 
     Cookie(1, (1, 1))
+    Cookie(10, (0, 0))
+    Cookie(10, (2, 2))
 
 
 def create_particles(position):
@@ -354,6 +356,7 @@ if __name__ == '__main__':
     size = width, height = 1280, 720
     screen_rect = (0, 0, width, height)
     screen = pygame.display.set_mode(size)
+    pygame.display.set_icon(load_image('icon.ico'))
     fon = pygame.transform.scale(load_image('fon.jpg'), (width, height))
 
     cur_group = pygame.sprite.Group()
