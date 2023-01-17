@@ -1,8 +1,8 @@
 import pygame
-from sys import exit
+import sys
 from math import ceil
 from random import choice
-from image_loading import load_image
+from loading import load_image, load_music
 from start_screen import start_screen
 from end_screen import end_screen
 
@@ -28,8 +28,6 @@ def render_environment():
         Panel('P', 75, 250 + i * 300)
 
     Cookie(1, (1, 1))
-    Cookie(10, (0, 0))
-    Cookie(10, (2, 2))
 
 
 def create_particles(position):
@@ -171,7 +169,7 @@ class Cookie(pygame.sprite.Sprite):
             else:
                 end_screen(flPause, total_time, total_money, total_merges, total_purchases, 'passed')
                 pygame.quit()
-                exit()
+                sys.exit()
         else:
             another_cookie = [c for c in pygame.sprite.spritecollide(self, cookies_group, False)
                               if c != self][0]
@@ -327,7 +325,7 @@ class UpgradeButton(pygame.sprite.Sprite):
 
 
 class Particle(pygame.sprite.Sprite):
-    fire = [load_image("star.png")]
+    fire = [load_image('star.png')]
     for scale in (15, 20, 25):
         fire.append(pygame.transform.scale(fire[0], (scale, scale)))
 
@@ -372,7 +370,7 @@ if __name__ == '__main__':
     particle_group = pygame.sprite.Group()
 
     flPause = False
-    pygame.mixer.music.load("data/music.mp3")
+    load_music('music.mp3')
     pygame.mixer.music.play(-1)
 
     start_screen(flPause)
@@ -543,4 +541,4 @@ if __name__ == '__main__':
         clock.tick(90)
     end_screen(flPause, total_time, total_money, total_merges, total_purchases, 'failed')
     pygame.quit()
-    exit()
+    sys.exit()

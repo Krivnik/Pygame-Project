@@ -1,7 +1,6 @@
 import pygame
 import sys
-from pymorphy2 import MorphAnalyzer
-from image_loading import load_image
+from loading import load_image, load_text
 
 pygame.init()
 size = width, height = 1280, 720
@@ -10,14 +9,14 @@ pygame.display.set_icon(load_image('icon.ico'))
 
 
 def end_screen(flp, total_time, total_money, total_merges, total_purchases, way):
-    with open('data/results.txt', 'a') as f:
+    with load_text('results.txt', 'w') as f:
         if way == 'passed':
             f.write(f'total time: {total_time}\n'
                     f'total money: {total_money}\n'
                     f'total purchases: {total_purchases}\n'
                     f'total merges: {total_merges}\n'
                     f'-----------------------------\n')
-    with open('data/results.txt', 'rt') as f:
+    with load_text('results.txt', 'rt') as f:
         lines = f.readlines()
         results = []
         for i in range(0, len(lines), 5):
@@ -56,18 +55,13 @@ def end_screen(flp, total_time, total_money, total_merges, total_purchases, way)
     cake = Cake(load_image('cake.png'), 2, 2, 750, 518)
     cake.rect.x, cake.rect.y = 550, 100
 
-    morph = MorphAnalyzer()
-    word_1 = morph.parse('секунду')[0].make_agree_with_number(total_time).word
-    word_2 = morph.parse('пироги')[0].make_agree_with_number(total_purchases).word
-    word_3 = morph.parse('разы')[0].make_agree_with_number(total_merges).word
     intro_text = ["СПАСИБО ЗА ИГРУ!",
                   "",
-                  "За время игры вы:",
-                  f"Потратили впустую {total_time}",
-                  f"{word_1} своей жизни",
-                  f"Заработали {total_money}$",
-                  f"Купили {total_purchases} {word_2}",
-                  f"Соединили пироги {total_merges} {word_3}"
+                  "За время игры было:",
+                  f"Потрачено впустую {total_time} сек.",
+                  f"Заработано {total_money}$",
+                  f"Куплено пирогов: {total_purchases} шт.",
+                  f"Произведено соединений: {total_merges} шт."
                   "",
                   f"Ваше местов рейтинге: {place}"]
 
